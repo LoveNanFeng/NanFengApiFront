@@ -5,6 +5,8 @@
 > 后端仓库地址：[LoveNanFeng/NanFengApiBack](https://github.com/LoveNanFeng/NanFengApiBack)
 >
 > 本地开发默认后端地址：`http://localhost:8080/api`
+>
+> **主业务前端文件在 `vben-admin/playground`，启动、打包、页面开发都以 `playground` 为准。**
 
 这是 NanFengAPI 计费系统的前端项目，基于 Vue 3、Vite、TypeScript、Vben Admin 构建。实际业务入口在 `playground` 应用中，包含控制台后台、用户工作台、接口市场、接口文档、密钥管理、套餐购买、调用日志、支付配置等页面。
 
@@ -96,13 +98,13 @@ VITE_GLOB_API_URL=/api
 开发代理目标：
 
 ```ts
-target: 'http://localhost:8080/api'
+target: 'http://localhost:8080/api';
 ```
 
 如果你的后端不在本机 `8080` 端口，请修改 `playground/vite.config.ts` 中的代理目标，例如：
 
 ```ts
-target: 'http://你的后端域名或IP:端口/api'
+target: 'http://你的后端域名或IP:端口/api';
 ```
 
 生产环境通常不使用 Vite 代理，需要让 Nginx 或网关把 `/api` 和 `/open` 转发到后端服务。
