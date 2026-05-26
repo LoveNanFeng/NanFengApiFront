@@ -16,11 +16,11 @@
 
 ## 项目关系
 
-| 项目 | 仓库地址 | 说明 |
-| --- | --- | --- |
-| 主仓库 | [LoveNanFeng/NanFengAPI](https://github.com/LoveNanFeng/NanFengAPI) | NanFengAPI 项目总仓库，汇总前端、后端和项目说明 |
+| 项目 | 仓库地址 | 说明                                    |
+| --- | --- |---------------------------------------|
+| 主仓库 | [LoveNanFeng/NanFengAPI](https://github.com/LoveNanFeng/NanFengAPI) | NanFengAPI 项目主仓库，项目说明和部署文档都在此仓库       |
 | 前端仓库 | [LoveNanFeng/NanFengApiFront](https://github.com/LoveNanFeng/NanFengApiFront) | 当前前端项目，主业务应用在 `vben-admin/playground` |
-| 后端仓库 | [LoveNanFeng/NanFengApiBack](https://github.com/LoveNanFeng/NanFengApiBack) | NanFengAPI 后端服务，默认接口前缀为 `/api` |
+| 后端仓库 | [LoveNanFeng/NanFengApiBack](https://github.com/LoveNanFeng/NanFengApiBack) | NanFengAPI 后端服务，默认接口前缀为 `/api`        |
 
 | 配置项       | 默认值                      |
 | ------------ | --------------------------- |
