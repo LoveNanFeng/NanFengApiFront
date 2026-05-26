@@ -1,157 +1,214 @@
-<div align="center">
-  <a href="https://github.com/anncwb/vue-vben-admin">
-    <img alt="VbenAdmin Logo" width="215" src="https://unpkg.com/@vbenjs/static-source@0.1.7/source/logo-v1.webp">
-  </a>
-  <br>
-  <br>
+# NanFengAPI 前端
 
-[![license](https://img.shields.io/github/license/anncwb/vue-vben-admin.svg)](LICENSE)
+> **重要：本前端已适配 NanFengAPI 后端。**
+>
+> 后端仓库地址：[LoveNanFeng/NanFengApiBack](https://github.com/LoveNanFeng/NanFengApiBack)
+>
+> 本地开发默认后端地址：`http://localhost:8080/api`
 
-  <h1>Vue Vben Admin</h1>
-</div>
+这是 NanFengAPI 计费系统的前端项目，基于 Vue 3、Vite、TypeScript、Vben Admin 构建。实际业务入口在 `playground` 应用中，包含控制台后台、用户工作台、接口市场、接口文档、密钥管理、套餐购买、调用日志、支付配置等页面。
 
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=vbenjs_vue-vben-admin&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=vbenjs_vue-vben-admin) [![codeql](https://github.com/vbenjs/vue-vben-admin/actions/workflows/codeql.yml/badge.svg)](https://github.com/vbenjs/vue-vben-admin/actions/workflows/codeql.yml) [![build](https://github.com/vbenjs/vue-vben-admin/actions/workflows/build.yml/badge.svg)](https://github.com/vbenjs/vue-vben-admin/actions/workflows/build.yml) [![ci](https://github.com/vbenjs/vue-vben-admin/actions/workflows/ci.yml/badge.svg)](https://github.com/vbenjs/vue-vben-admin/actions/workflows/ci.yml) [![deploy](https://github.com/vbenjs/vue-vben-admin/actions/workflows/deploy.yml/badge.svg)](https://github.com/vbenjs/vue-vben-admin/actions/workflows/deploy.yml)
+## 项目关系
 
-**English** | [中文](./README.zh-CN.md) | [日本語](./README.ja-JP.md)
+- 前端目录：`vben-admin`
+- 前端业务应用：`vben-admin/playground`
+- 后端仓库：[LoveNanFeng/NanFengApiBack](https://github.com/LoveNanFeng/NanFengApiBack)
+- 后端本地端口：`8080`
+- 后端接口前缀：`/api`
+- 前端本地端口：`5555`
 
-## Introduction
+开发环境中，前端通过 `playground/vite.config.ts` 代理请求：
 
-Vue Vben Admin is a free and open source middle and back-end template. Using the latest `vue3`, `vite`, `TypeScript` and other mainstream technology development, the out-of-the-box middle and back-end front-end solutions can also be used for learning reference.
+- `/api` -> `http://localhost:8080/api`
+- `/open` -> `http://localhost:8080/api/open`
 
-## Upgrade Notice
+因此本地开发时请先启动后端，再启动前端。
 
-This is the latest version, 5.0, and it is not compatible with previous versions. If you are starting a new project, it is recommended to use the latest version. If you wish to view the old version, please use the [v2 branch](https://github.com/vbenjs/vue-vben-admin/tree/v2).
+## 环境要求
 
-## Features
-
-- **Latest Technology Stack**: Developed with cutting-edge front-end technologies like Vue 3 and Vite
-- **TypeScript**: A language for application-scale JavaScript
-- **Themes**: Multiple theme colors available with customizable options
-- **Internationalization**: Comprehensive built-in internationalization support
-- **Permissions**: Built-in solution for dynamic route-based permission generation
-
-## Preview
-
-- [Vben Admin](https://vben.pro/) - Full version Chinese site
-
-Test Account: vben/123456
-
-<div align="center">
-  <img alt="VbenAdmin Logo" width="100%" src="https://anncwb.github.io/anncwb/images/preview1.png">
-  <img alt="VbenAdmin Logo" width="100%" src="https://anncwb.github.io/anncwb/images/preview2.png">
-  <img alt="VbenAdmin Logo" width="100%" src="https://anncwb.github.io/anncwb/images/preview3.png">
-</div>
-
-### Use Gitpod
-
-Open the project in Gitpod (free online dev environment for GitHub) and start coding immediately.
-
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/vbenjs/vue-vben-admin)
-
-## Documentation
-
-[Document](https://doc.vben.pro/)
-
-## Install and Use
-
-1. Get the project code
+- Node.js：`^20.19.0 || ^22.18.0 || ^24.0.0`
+- pnpm：`>=10.0.0`
+- 推荐启用 Corepack，避免 pnpm 版本不一致。
 
 ```bash
-git clone https://github.com/vbenjs/vue-vben-admin.git
+corepack enable
+corepack prepare pnpm@10.33.0 --activate
 ```
 
-2. Install dependencies
+## 安装依赖
+
+在前端根目录执行：
 
 ```bash
-cd vue-vben-admin
-npm i -g corepack
+cd vben-admin
 pnpm install
 ```
 
-3. Run
+如果依赖异常，可以重新安装：
 
 ```bash
+pnpm reinstall
+```
+
+## 本地启动
+
+先启动后端服务，确保后端可访问：
+
+```text
+http://localhost:8080/api
+```
+
+然后在 `vben-admin` 目录启动前端：
+
+```bash
+pnpm dev:play
+```
+
+启动成功后访问：
+
+```text
+http://localhost:5555
+```
+
+也可以进入业务应用目录启动：
+
+```bash
+cd vben-admin/playground
 pnpm dev
 ```
 
-4. Build
+## 后端地址适配
+
+默认开发配置在：
+
+```text
+playground/.env.development
+playground/vite.config.ts
+```
+
+当前默认值：
+
+```env
+VITE_PORT=5555
+VITE_GLOB_API_URL=/api
+```
+
+开发代理目标：
+
+```ts
+target: 'http://localhost:8080/api'
+```
+
+如果你的后端不在本机 `8080` 端口，请修改 `playground/vite.config.ts` 中的代理目标，例如：
+
+```ts
+target: 'http://你的后端域名或IP:端口/api'
+```
+
+生产环境通常不使用 Vite 代理，需要让 Nginx 或网关把 `/api` 和 `/open` 转发到后端服务。
+
+## 打包命令
+
+在 `vben-admin` 目录执行：
+
+```bash
+pnpm build:play
+```
+
+打包产物默认生成在：
+
+```text
+vben-admin/playground/dist
+```
+
+如果需要构建整个 monorepo：
 
 ```bash
 pnpm build
 ```
 
-## Change Log
+一般部署 NanFengAPI 前端只需要执行 `pnpm build:play`。
 
-[CHANGELOG](https://github.com/vbenjs/vue-vben-admin/releases)
+## 预览打包产物
 
-## How to Contribute
+进入业务应用目录后执行：
 
-You are very welcome to join! [Raise an issue](https://github.com/anncwb/vue-vben-admin/issues/new/choose) or submit a Pull Request.
+```bash
+cd vben-admin/playground
+pnpm preview
+```
 
-**Pull Request Process:**
+## 常用命令
 
-1. Fork the code
-2. Create your branch: `git checkout -b feat/xxxx`
-3. Submit your changes: `git commit -am 'feat(function): add xxxxx'`
-4. Push your branch: `git push origin feat/xxxx`
-5. Submit `pull request`
+```bash
+# 安装依赖
+pnpm install
 
-## Git Contribution Submission Specification
+# 启动 NanFengAPI 前端业务应用
+pnpm dev:play
 
-Reference [vue](https://github.com/vuejs/vue/blob/dev/.github/COMMIT_CONVENTION.md) specification ([Angular](https://github.com/conventional-changelog/conventional-changelog/tree/master/packages/conventional-changelog-angular))
+# 打包 NanFengAPI 前端业务应用
+pnpm build:play
 
-- `feat` Add new features
-- `fix` Fix the problem/BUG
-- `style` The code style is related and does not affect the running result
-- `perf` Optimization/performance improvement
-- `refactor` Refactor
-- `revert` Undo edit
-- `test` Test related
-- `docs` Documentation/notes
-- `chore` Dependency update/scaffolding configuration modification etc.
-- `ci` Continuous integration
-- `types` Type definition file changes
+# 类型检查
+pnpm -F @vben/playground typecheck
 
-## Browser Support
+# 代码格式化 / lint
+pnpm lint
+```
 
-The `Chrome 80+` browser is recommended for local development
+## 部署提示
 
-Support modern browsers, not IE
+1. 先部署后端：[LoveNanFeng/NanFengApiBack](https://github.com/LoveNanFeng/NanFengApiBack)。
+2. 再打包前端：`pnpm build:play`。
+3. 将 `vben-admin/playground/dist` 部署到 Nginx、宝塔、1Panel 或其他静态站点服务。
+4. 配置反向代理，把 `/api` 和 `/open` 转发到后端服务。
 
-| [<img src="https://raw.githubusercontent.com/alrra/browser-logos/master/src/edge/edge_48x48.png" alt="Edge" width="24px" height="24px" />](http://godban.github.io/browsers-support-badges/)</br>Edge | [<img src="https://raw.githubusercontent.com/alrra/browser-logos/master/src/firefox/firefox_48x48.png" alt="Firefox" width="24px" height="24px" />](http://godban.github.io/browsers-support-badges/)</br>Firefox | [<img src="https://raw.githubusercontent.com/alrra/browser-logos/master/src/chrome/chrome_48x48.png" alt="Chrome" width="24px" height="24px" />](http://godban.github.io/browsers-support-badges/)</br>Chrome | [<img src="https://raw.githubusercontent.com/alrra/browser-logos/master/src/safari/safari_48x48.png" alt="Safari" width="24px" height="24px" />](http://godban.github.io/browsers-support-badges/)</br>Safari |
-| :-: | :-: | :-: | :-: |
-| last 2 versions | last 2 versions | last 2 versions | last 2 versions |
+Nginx 示例：
 
-## Maintainer
+```nginx
+location / {
+  try_files $uri $uri/ /index.html;
+}
 
-[@Vben](https://github.com/anncwb)
+location /api/ {
+  proxy_pass http://127.0.0.1:8080/api/;
+  proxy_set_header Host $host;
+  proxy_set_header X-Real-IP $remote_addr;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header X-Forwarded-Proto $scheme;
+}
 
-## Star History
+location /open/ {
+  proxy_pass http://127.0.0.1:8080/api/open/;
+  proxy_set_header Host $host;
+  proxy_set_header X-Real-IP $remote_addr;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
 
-[![Star History Chart](https://api.star-history.com/svg?repos=vbenjs/vue-vben-admin&type=Date)](https://star-history.com/#vbenjs/vue-vben-admin&Date)
+## 目录说明
 
-## Donate
+```text
+vben-admin/
+  playground/              NanFengAPI 实际业务前端
+    src/
+      api/                 前端接口封装
+      views/               页面模块
+      components/          业务组件
+      router/              路由配置
+      store/               状态管理
+    .env.development       开发环境变量
+    .env.production        生产打包变量
+    vite.config.ts         Vite 代理与构建配置
+  packages/                Vben 公共包
+  internal/                Vben 内部工程配置
+```
 
-If you think this project is helpful to you, you can help the author buy a cup of coffee to show your support!
+## 注意事项
 
-![donate](https://unpkg.com/@vbenjs/static-source@0.1.7/source/sponsor.png)
-
-<a style="display: block;width: 100px;height: 50px;line-height: 50px; color: #fff;text-align: center; background: #408aee;border-radius: 4px;" href="https://www.paypal.com/paypalme/cvvben">Paypal Me</a>
-
-## Contributors
-
-<a href="https://openomy.app/github/vbenjs/vue-vben-admin" target="_blank" style="display: block; width: 100%;" align="center">
-  <img src="https://openomy.app/svg?repo=vbenjs/vue-vben-admin&chart=bubble&latestMonth=3" target="_blank" alt="Contribution Leaderboard" style="display: block; width: 100%;" />
- </a>
-
-<a href="https://github.com/vbenjs/vue-vben-admin/graphs/contributors">
-  <img alt="Contributors" src="https://contrib.rocks/image?repo=vbenjs/vue-vben-admin" />
-</a>
-
-## Discord
-
-- [Github Discussions](https://github.com/anncwb/vue-vben-admin/discussions)
-
-## License
-
-[MIT © Vben-2020](./LICENSE)
+- 本项目不要再按 Vben 官方演示项目使用，业务入口是 `playground`。
+- 后端必须使用 NanFengAPI 后端仓库：[LoveNanFeng/NanFengApiBack](https://github.com/LoveNanFeng/NanFengApiBack)。
+- 开发环境如果请求失败，优先检查后端是否启动、端口是否为 `8080`、前端代理是否指向正确地址。
+- 生产环境如果刷新页面 404，需要确认静态站点已配置 `try_files $uri $uri/ /index.html;`。
