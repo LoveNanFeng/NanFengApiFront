@@ -1,6 +1,6 @@
 # NanFengAPI 前端
 
-> **重要：本前端已适配 NanFengAPI 后端。**
+> **本前端已适配 NanFengAPI 后端。**\
 > **主业务前端文件在 `vben-admin/playground`，启动、打包、页面开发都以 `playground` 为准。**
 
 这是 NanFengAPI 计费系统的前端项目，基于 Vue 3、Vite、TypeScript、Vben Admin 构建。实际业务入口在 `playground` 应用中，包含控制台后台、用户工作台、接口市场、接口文档、密钥管理、套餐购买、调用日志、支付配置等页面。
