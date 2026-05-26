@@ -646,6 +646,32 @@ function formatMoney(value: number | string) {
   })}`;
 }
 
+function paymentStatusColor(status?: RechargeApi.RechargeStatus) {
+  if (status === 'PAID') {
+    return 'success';
+  }
+  if (status === 'FAILED') {
+    return 'error';
+  }
+  if (status === 'CLOSED') {
+    return 'default';
+  }
+  return 'processing';
+}
+
+function paymentStatusText(status?: RechargeApi.RechargeStatus) {
+  if (status === 'PAID') {
+    return '已支付';
+  }
+  if (status === 'FAILED') {
+    return '支付失败';
+  }
+  if (status === 'CLOSED') {
+    return '已取消';
+  }
+  return '待支付';
+}
+
 function normalizeMoneyNumber(value: number | string | undefined) {
   const numberValue = Number(value ?? 0);
   if (!Number.isFinite(numberValue)) {
@@ -2058,12 +2084,8 @@ watch(
                 <span>订单号</span>
                 <strong>{{ rechargeOrder.orderNo }}</strong>
               </div>
-              <Tag
-                :color="
-                  rechargeOrder.status === 'PAID' ? 'success' : 'processing'
-                "
-              >
-                {{ rechargeOrder.status === 'PAID' ? '已支付' : '待支付' }}
+              <Tag :color="paymentStatusColor(rechargeOrder.status)">
+                {{ paymentStatusText(rechargeOrder.status) }}
               </Tag>
             </div>
             <div class="recharge-order-amounts">

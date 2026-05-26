@@ -224,6 +224,32 @@ function moneyText(value?: number | string) {
   })}`;
 }
 
+function paymentStatusColor(status?: RechargeApi.RechargeStatus) {
+  if (status === 'PAID') {
+    return 'success';
+  }
+  if (status === 'FAILED') {
+    return 'error';
+  }
+  if (status === 'CLOSED') {
+    return 'default';
+  }
+  return 'processing';
+}
+
+function paymentStatusText(status?: RechargeApi.RechargeStatus) {
+  if (status === 'PAID') {
+    return '已支付';
+  }
+  if (status === 'FAILED') {
+    return '支付失败';
+  }
+  if (status === 'CLOSED') {
+    return '已取消';
+  }
+  return '待支付';
+}
+
 function packageTypeLabel(type?: PackagePayType) {
   if (type === 'GLOBAL') {
     return '全站套餐';
@@ -612,8 +638,8 @@ defineExpose({ open });
               <span>订单号</span>
               <strong>{{ order.orderNo }}</strong>
             </div>
-            <Tag :color="order.status === 'PAID' ? 'success' : 'processing'">
-              {{ order.status === 'PAID' ? '已支付' : '待支付' }}
+            <Tag :color="paymentStatusColor(order.status)">
+              {{ paymentStatusText(order.status) }}
             </Tag>
           </div>
           <div v-if="order.qrCode" class="package-pay__qrcode">
