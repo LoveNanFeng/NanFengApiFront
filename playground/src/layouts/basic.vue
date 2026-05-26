@@ -4,13 +4,10 @@ import { useRouter } from 'vue-router';
 
 import { AuthenticationLoginExpiredModal } from '@vben/common-ui';
 import { useWatermark } from '@vben/hooks';
-import {
-  BasicLayout,
-  LockScreen,
-  UserDropdown,
-} from '@vben/layouts';
+import { BasicLayout, LockScreen, UserDropdown } from '@vben/layouts';
 import { preferences, usePreferences } from '@vben/preferences';
 import { useAccessStore, useTabbarStore, useUserStore } from '@vben/stores';
+
 import { $t } from '#/locales';
 import { useAuthStore } from '#/store';
 import LoginForm from '#/views/_core/authentication/login.vue';
@@ -34,6 +31,7 @@ const authStore = useAuthStore();
 const accessStore = useAccessStore();
 const { destroyWatermark, updateWatermark } = useWatermark();
 const { isDark } = usePreferences();
+const DEFAULT_LOCAL_AVATAR = '/logo.png';
 
 const menus = computed(() => [
   {
@@ -49,11 +47,11 @@ function maskEmail(email: string): string {
   if (!email) return '';
   const at = email.indexOf('@');
   if (at <= 2) return email;
-  return email.substring(0, 2) + '***' + email.substring(at);
+  return `${email.slice(0, 2)}***${email.slice(Math.max(0, at))}`;
 }
 
 const avatar = computed(() => {
-  return userStore.userInfo?.avatar ?? preferences.app.defaultAvatar;
+  return DEFAULT_LOCAL_AVATAR;
 });
 
 async function handleLogout() {

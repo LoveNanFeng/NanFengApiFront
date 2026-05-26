@@ -24,7 +24,6 @@ import { useRouter } from 'vue-router';
 import { useVbenDrawer, WorkbenchHeader } from '@vben/common-ui';
 import { IconifyIcon } from '@vben/icons';
 import { EchartsUI, useEcharts } from '@vben/plugins/echarts';
-import { preferences } from '@vben/preferences';
 import { useUserStore } from '@vben/stores';
 import { openWindow } from '@vben/utils';
 
@@ -60,6 +59,7 @@ import RichTextPreview from '#/components/rich-text-preview/index.vue';
 
 const router = useRouter();
 const userStore = useUserStore();
+const DEFAULT_LOCAL_AVATAR = '/logo.png';
 
 interface HeaderAssetItem {
   action?: 'balanceRecharge' | 'packageDetail' | undefined;
@@ -1319,10 +1319,7 @@ watch(
 
 <template>
   <div class="p-5">
-    <WorkbenchHeader
-      v-if="isUserWorkspace"
-      :avatar="userStore.userInfo?.avatar || preferences.app.defaultAvatar"
-    >
+    <WorkbenchHeader v-if="isUserWorkspace" :avatar="DEFAULT_LOCAL_AVATAR">
       <template #title>
         早安，{{
           userStore.userInfo?.realName || userStore.userInfo?.username

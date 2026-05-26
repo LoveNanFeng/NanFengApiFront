@@ -1,11 +1,23 @@
 <script lang="ts" setup>
+import type { Sortable } from '@vben/hooks';
+
 import type { InterfaceApi } from '#/api/interface';
 
-import { computed, reactive, ref } from 'vue';
+import { computed, nextTick, reactive, ref, watch } from 'vue';
 
 import { useVbenDrawer } from '@vben/common-ui';
+import { useSortable } from '@vben/hooks';
+import { IconifyIcon } from '@vben/icons';
 
-import { Button, Input, Select, Switch, Tag, message } from 'ant-design-vue';
+import {
+  Button,
+  Input,
+  message,
+  Select,
+  Switch,
+  Tag,
+  Tooltip,
+} from 'ant-design-vue';
 
 import { getInterfaceDoc, updateInterfaceDoc } from '#/api/interface';
 
@@ -42,8 +54,10 @@ const formData = ref<InterfaceApi.InterfaceDocConfig>();
 const id = ref<string>();
 const requestParams = ref<DocParameter[]>([]);
 const responseFields = ref<DocResponseField[]>([]);
+const responseFieldListRef = ref<HTMLElement>();
 const statusCodes = ref<DocStatusCode[]>([]);
 const templateParameters = ref<string[]>([]);
+const responseFieldSortable = ref<null | Sortable>(null);
 
 const baseForm = reactive({
   docNotice: '',
@@ -83,7 +97,10 @@ const preferredMethodOptions = computed(() => {
   const method = formData.value?.requestMethod;
   const options = [{ label: '跟随接口方式', value: '' }];
   if (method === 'GET_POST') {
-    options.push({ label: 'GET', value: 'GET' }, { label: 'POST', value: 'POST' });
+    options.push(
+      { label: 'GET', value: 'GET' },
+      { label: 'POST', value: 'POST' },
+    );
     return options;
   }
   if (method === 'GET' || method === 'POST') {
@@ -127,7 +144,10 @@ const [Drawer, drawerApi] = useVbenDrawer({
   },
 
   async onOpenChange(isOpen) {
-    if (!isOpen) return;
+    if (!isOpen) {
+      destroyResponseFieldSortable();
+      return;
+    }
 
     const row = drawerApi.getData<InterfaceApi.InterfaceItem>();
     resetState(row);
@@ -150,6 +170,7 @@ const [Drawer, drawerApi] = useVbenDrawer({
     responseFields.value = parseResponseFields(data.docResponseFields);
     statusCodes.value = parseStatusCodes(data.docStatusCodes);
     fillTemplateParameters(false);
+    void initResponseFieldSortable();
   },
 });
 
@@ -212,6 +233,7 @@ function addRequestParam() {
 
 function addResponseField() {
   responseFields.value.push(createResponseField());
+  void initResponseFieldSortable();
 }
 
 function addStatusCode() {
@@ -224,6 +246,7 @@ function removeRequestParam(index: number) {
 
 function removeResponseField(index: number) {
   responseFields.value.splice(index, 1);
+  void initResponseFieldSortable();
 }
 
 function removeStatusCode(index: number) {
@@ -404,7 +427,7 @@ function parseArray(text?: string): Record<string, any>[] {
 function parameterNamesFromTemplate(template: string) {
   const names: string[] = [];
   const regex = /\{([A-Za-z][A-Za-z0-9_]*)\}/g;
-  let match: RegExpExecArray | null;
+  let match: null | RegExpExecArray;
   while ((match = regex.exec(template))) {
     const before = template.slice(0, match.index);
     const queryKey = before.match(/[?&]([^=&?#]+)=$/)?.[1];
@@ -435,6 +458,56 @@ function blankToUndefined(value: string) {
 function stringValue(value: any) {
   return value === undefined || value === null ? '' : String(value);
 }
+
+async function initResponseFieldSortable() {
+  await nextTick();
+  const element = responseFieldListRef.value;
+  if (!element || responseFields.value.length <= 1) {
+    responseFieldSortable.value?.destroy();
+    responseFieldSortable.value = null;
+    return;
+  }
+  if (responseFieldSortable.value) {
+    return;
+  }
+  const { initializeSortable } = useSortable(element, {
+    animation: 180,
+    ghostClass: 'response-field-row--ghost',
+    handle: '.response-field-drag-handle',
+    onEnd(event) {
+      const { newIndex, oldIndex } = event;
+      if (
+        oldIndex === undefined ||
+        newIndex === undefined ||
+        oldIndex === newIndex
+      ) {
+        return;
+      }
+      moveResponseField(oldIndex, newIndex);
+    },
+  });
+  responseFieldSortable.value = await initializeSortable();
+}
+
+function moveResponseField(oldIndex: number, newIndex: number) {
+  const fields = [...responseFields.value];
+  const [field] = fields.splice(oldIndex, 1);
+  if (!field) return;
+  fields.splice(newIndex, 0, field);
+  responseFields.value = fields;
+}
+
+function destroyResponseFieldSortable() {
+  responseFieldSortable.value?.destroy();
+  responseFieldSortable.value = null;
+}
+
+watch(
+  () => responseFields.value.length,
+  () => {
+    void initResponseFieldSortable();
+  },
+);
 </script>
 
 <template>
@@ -446,7 +519,9 @@ function stringValue(value: any) {
           <div class="doc-hero__desc">
             这里配置给前台用户看的接口说明，不影响接口真实转发地址和计费规则。
           </div>
-          <div v-if="interfaceMeta" class="doc-hero__meta">{{ interfaceMeta }}</div>
+          <div v-if="interfaceMeta" class="doc-hero__meta">
+            {{ interfaceMeta }}
+          </div>
         </div>
         <Tag color="blue">可视化填写</Tag>
       </div>
@@ -488,10 +563,15 @@ function stringValue(value: any) {
         <div class="doc-section__head">
           <div>
             <h3>请求参数</h3>
-            <p>用户调用接口时需要传的业务参数；接口密钥 key 会由系统自动展示。</p>
+            <p>
+              用户调用接口时需要传的业务参数；接口密钥 key 会由系统自动展示。
+            </p>
           </div>
           <div class="doc-actions">
-            <Button v-if="hasTemplateParameters" @click="fillTemplateParameters()">
+            <Button
+              v-if="hasTemplateParameters"
+              @click="fillTemplateParameters()"
+            >
               从接口地址识别
             </Button>
             <Button type="primary" @click="addRequestParam">添加参数</Button>
@@ -518,7 +598,10 @@ function stringValue(value: any) {
           >
             <div class="param-main">
               <Input v-model:value="item.name" placeholder="url" />
-              <Select v-model:value="item.location" :options="locationOptions" />
+              <Select
+                v-model:value="item.location"
+                :options="locationOptions"
+              />
               <Select v-model:value="item.type" :options="typeOptions" />
               <Switch v-model:checked="item.required" />
               <Button danger type="link" @click="removeRequestParam(index)">
@@ -550,7 +633,8 @@ function stringValue(value: any) {
             </div>
           </div>
           <div v-if="requestParams.length === 0" class="visual-empty">
-            暂未配置业务参数。接口只有 key 时可以留空，需要参数时点击“添加参数”。
+            暂未配置业务参数。接口只有 key
+            时可以留空，需要参数时点击“添加参数”。
           </div>
         </div>
       </section>
@@ -565,25 +649,33 @@ function stringValue(value: any) {
         </div>
         <div class="visual-table visual-table--fields">
           <div class="visual-table__head">
+            <span></span>
             <span>字段名</span>
             <span>类型</span>
             <span>说明</span>
             <span></span>
           </div>
-          <div
-            v-for="(item, index) in responseFields"
-            :key="item.id"
-            class="visual-table__row"
-          >
-            <Input v-model:value="item.name" placeholder="data.url" />
-            <Select v-model:value="item.type" :options="typeOptions" />
-            <Input
-              v-model:value="item.description"
-              placeholder="返回字段说明"
-            />
-            <Button danger type="link" @click="removeResponseField(index)">
-              删除
-            </Button>
+          <div ref="responseFieldListRef" class="visual-table__body">
+            <div
+              v-for="(item, index) in responseFields"
+              :key="item.id"
+              class="visual-table__row response-field-row"
+            >
+              <Tooltip title="点击拖拽排序">
+                <button class="response-field-drag-handle" type="button">
+                  <IconifyIcon icon="lucide:grip-vertical" />
+                </button>
+              </Tooltip>
+              <Input v-model:value="item.name" placeholder="data.url" />
+              <Select v-model:value="item.type" :options="typeOptions" />
+              <Input
+                v-model:value="item.description"
+                placeholder="返回字段说明"
+              />
+              <Button danger type="link" @click="removeResponseField(index)">
+                删除
+              </Button>
+            </div>
           </div>
           <div v-if="responseFields.length === 0" class="visual-empty">
             暂未配置返回字段。公开文档仍会展示基础说明。
@@ -605,7 +697,7 @@ function stringValue(value: any) {
         <Textarea
           v-model:value="baseForm.docResponseExample"
           :rows="8"
-          placeholder='{"code":200,"msg":"请求成功","data":{}}'
+          placeholder="{&quot;code&quot;:200,&quot;msg&quot;:&quot;请求成功&quot;,&quot;data&quot;:{}}"
         />
       </section>
 
@@ -670,23 +762,23 @@ function stringValue(value: any) {
 
 .doc-hero,
 .doc-section {
+  background: hsl(var(--background));
   border: 1px solid hsl(var(--border));
   border-radius: 8px;
-  background: hsl(var(--background));
 }
 
 .doc-hero {
   display: flex;
+  gap: 16px;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
   padding: 16px;
 }
 
 .doc-hero__title {
-  color: hsl(var(--foreground));
   font-size: 18px;
   font-weight: 700;
+  color: hsl(var(--foreground));
 }
 
 .doc-hero__desc,
@@ -694,8 +786,8 @@ function stringValue(value: any) {
 .doc-section__head p,
 .doc-tip,
 .visual-empty {
-  color: hsl(var(--muted-foreground));
   font-size: 13px;
+  color: hsl(var(--muted-foreground));
 }
 
 .doc-hero__desc {
@@ -712,17 +804,17 @@ function stringValue(value: any) {
 
 .doc-section__head {
   display: flex;
+  gap: 16px;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
   margin-bottom: 14px;
 }
 
 .doc-section__head h3 {
   margin: 0;
-  color: hsl(var(--foreground));
   font-size: 16px;
   font-weight: 700;
+  color: hsl(var(--foreground));
 }
 
 .doc-section__head p {
@@ -732,8 +824,8 @@ function stringValue(value: any) {
 .doc-actions {
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
   gap: 8px;
+  justify-content: flex-end;
 }
 
 .doc-form-grid {
@@ -746,9 +838,9 @@ function stringValue(value: any) {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  color: hsl(var(--foreground));
   font-size: 14px;
   font-weight: 600;
+  color: hsl(var(--foreground));
 }
 
 .doc-field--full {
@@ -758,13 +850,13 @@ function stringValue(value: any) {
 .doc-tip {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
   gap: 6px;
+  align-items: center;
   padding: 10px 12px;
   margin-bottom: 12px;
+  background: hsl(var(--primary) / 5%);
   border: 1px dashed hsl(var(--primary) / 35%);
   border-radius: 8px;
-  background: hsl(var(--primary) / 5%);
 }
 
 .visual-table {
@@ -773,24 +865,30 @@ function stringValue(value: any) {
   gap: 8px;
 }
 
-.visual-table__head,
-.visual-table__row {
-  display: grid;
-  align-items: center;
+.visual-table__body {
+  display: flex;
+  flex-direction: column;
   gap: 8px;
 }
 
+.visual-table__head,
+.visual-table__row {
+  display: grid;
+  gap: 8px;
+  align-items: center;
+}
+
 .visual-table__head {
-  color: hsl(var(--muted-foreground));
   font-size: 12px;
   font-weight: 700;
+  color: hsl(var(--muted-foreground));
 }
 
 .visual-table__row {
   padding: 10px;
+  background: hsl(var(--muted) / 35%);
   border: 1px solid hsl(var(--border));
   border-radius: 8px;
-  background: hsl(var(--muted) / 35%);
 }
 
 .visual-table__row > * {
@@ -817,8 +915,8 @@ function stringValue(value: any) {
   grid-template-columns:
     minmax(132px, 1fr) minmax(150px, 1fr) minmax(140px, 0.9fr)
     76px 56px;
-  align-items: center;
   gap: 8px;
+  align-items: center;
 }
 
 .param-main > * {
@@ -837,14 +935,50 @@ function stringValue(value: any) {
 .param-extra label {
   display: grid;
   gap: 6px;
-  color: hsl(var(--muted-foreground));
   font-size: 12px;
   font-weight: 700;
+  color: hsl(var(--muted-foreground));
 }
 
 .visual-table--fields .visual-table__head,
 .visual-table--fields .visual-table__row {
-  grid-template-columns: minmax(130px, 1fr) 120px minmax(180px, 1.5fr) 48px;
+  grid-template-columns: 34px minmax(130px, 1fr) 120px minmax(180px, 1.5fr) 48px;
+}
+
+.response-field-row {
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.response-field-row--ghost {
+  background: hsl(var(--primary) / 8%);
+  border-color: hsl(var(--primary) / 65%);
+  box-shadow: 0 8px 20px hsl(var(--primary) / 12%);
+}
+
+.response-field-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: hsl(var(--muted-foreground));
+  cursor: grab;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+}
+
+.response-field-drag-handle:hover {
+  color: hsl(var(--foreground));
+  background: hsl(var(--muted));
+}
+
+.response-field-drag-handle:active {
+  cursor: grabbing;
 }
 
 .visual-table--status .visual-table__head,
@@ -854,9 +988,9 @@ function stringValue(value: any) {
 
 .visual-empty {
   padding: 18px;
+  text-align: center;
   border: 1px dashed hsl(var(--border));
   border-radius: 8px;
-  text-align: center;
 }
 
 .doc-config :deep(.ant-input),
