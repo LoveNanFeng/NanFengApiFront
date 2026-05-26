@@ -1,5 +1,8 @@
 <script lang="ts" setup>
-import type { InterfacePackageStats, UserWorkbenchStats } from '#/api/core/user';
+import type {
+  InterfacePackageStats,
+  UserWorkbenchStats,
+} from '#/api/core/user';
 import type { RechargeApi } from '#/api/payment';
 
 import { computed, ref } from 'vue';
@@ -8,13 +11,13 @@ import { IconifyIcon } from '@vben/icons';
 
 import {
   Button,
+  message,
   Modal,
   QRCode,
   Radio,
   RadioGroup,
   Spin,
   Tag,
-  message,
 } from 'ant-design-vue';
 
 import { getUserWorkbenchStatsApi } from '#/api/core/user';
@@ -64,15 +67,17 @@ const balanceEnough = computed(() => {
   return Number.isFinite(userBalance) && userBalance >= amount.value;
 });
 
-const currentInterfacePackage = computed<InterfacePackageStats | undefined>(() => {
-  const item = target.value;
-  if (item?.type !== 'INTERFACE' || !item.interfaceId) {
-    return undefined;
-  }
-  return workbenchStats.value?.interfacePackages?.find(
-    (pkg) => String(pkg.interfaceId) === String(item.interfaceId),
-  );
-});
+const currentInterfacePackage = computed<InterfacePackageStats | undefined>(
+  () => {
+    const item = target.value;
+    if (item?.type !== 'INTERFACE' || !item.interfaceId) {
+      return undefined;
+    }
+    return workbenchStats.value?.interfacePackages?.find(
+      (pkg) => String(pkg.interfaceId) === String(item.interfaceId),
+    );
+  },
+);
 
 const purchaseEffect = computed(() => {
   const item = target.value;
@@ -141,15 +146,28 @@ const purchaseEffect = computed(() => {
 
 const alipayUsable = computed(() => {
   const item = capabilities.value;
-  return !!item?.enabled && (item.websitePayEnabled || item.wapPayEnabled || item.facePayEnabled);
+  return (
+    !!item?.alipayEnabled &&
+    (item.websitePayEnabled || item.wapPayEnabled || item.facePayEnabled)
+  );
 });
+
+const wechatUsable = computed(
+  () => !!capabilities.value?.wechatNativePayEnabled,
+);
+
+const onlinePayUsable = computed(
+  () => alipayUsable.value || wechatUsable.value,
+);
 
 const defaultProduct = computed<Exclude<RechargeApi.PayProduct, 'AUTO'>>(() => {
   const item = capabilities.value;
   if (!item) {
     return 'PAGE';
   }
-  return clientType.value === 'MOBILE' ? item.mobileDefault : item.desktopDefault;
+  return clientType.value === 'MOBILE'
+    ? item.mobileDefault
+    : item.desktopDefault;
 });
 
 const productOptions = computed(() => {
@@ -158,7 +176,10 @@ const productOptions = computed(() => {
     return [];
   }
   const options: Array<{ label: string; value: RechargeApi.PayProduct }> = [
-    { label: `自动选择（${payProductLabel(defaultProduct.value)}）`, value: 'AUTO' },
+    {
+      label: `自动选择（${payProductLabel(defaultProduct.value)}）`,
+      value: 'AUTO',
+    },
   ];
   if (item.websitePayEnabled) {
     options.push({ label: '电脑网站支付', value: 'PAGE' });
@@ -179,7 +200,10 @@ const submitDisabled = computed(() => {
   if (payChannel.value === 'BALANCE') {
     return amount.value > 0 && !balanceEnough.value;
   }
-  return amount.value < 0.01 || !alipayUsable.value;
+  if (payChannel.value === 'ALIPAY') {
+    return amount.value < 0.01 || !alipayUsable.value;
+  }
+  return amount.value < 0.01 || !wechatUsable.value;
 });
 
 const submitText = computed(() => {
@@ -255,8 +279,10 @@ async function loadPaymentContext() {
       capabilities.value = null;
       console.error('Failed to load Alipay capabilities:', error);
     }
-    if (amount.value > 0 && !balanceEnough.value && alipayUsable.value) {
-      payChannel.value = 'ALIPAY';
+    if (amount.value > 0 && !balanceEnough.value && onlinePayUsable.value) {
+      payChannel.value =
+        capabilities.value?.defaultPayChannel ??
+        (alipayUsable.value ? 'ALIPAY' : 'WECHAT');
     }
   } finally {
     loading.value = false;
@@ -298,7 +324,7 @@ function createAndSubmitAlipayForm(
   }
   const form = document.createElement('form');
   form.method = 'post';
-  form.acceptCharset = 'UTF-8';
+  form.acceptCharset = 'utf8';
   form.action = payOrder.formActionUrl || payOrder.gatewayUrl;
   form.target = formTarget;
   form.style.display = 'none';
@@ -355,7 +381,7 @@ async function syncCurrentOrder(orderNo?: string, showPendingMessage = true) {
   try {
     const latest = await syncRechargeOrder(currentOrderNo);
     order.value = {
-      ...(order.value ?? {}),
+      ...order.value,
       ...latest,
     } as RechargeApi.PackagePaymentOrder;
     if (latest.status === 'PAID') {
@@ -420,8 +446,14 @@ async function submitOrder() {
       closeModal();
       return;
     }
-    openAlipayPayment(payOrder, paymentWindow);
-    if (payOrder.payProduct === 'FACE') {
+    if (payOrder.payChannel === 'ALIPAY') {
+      openAlipayPayment(payOrder, paymentWindow);
+    } else {
+      paymentWindow?.close();
+    }
+    if (payOrder.payChannel === 'WECHAT') {
+      message.success('请使用微信扫码完成支付');
+    } else if (payOrder.payProduct === 'FACE') {
       message.success('请使用支付宝扫码完成支付');
     } else if (payOrder.payProduct === 'WAP' && clientType.value === 'MOBILE') {
       message.success('正在跳转支付宝支付');
@@ -468,7 +500,9 @@ defineExpose({ open });
           <div class="package-pay__main">
             <Tag color="blue">{{ packageTypeLabel(target.type) }}</Tag>
             <h3>{{ target.title }}</h3>
-            <p>{{ target.subtitle || target.description || '购买后立即生效' }}</p>
+            <p>
+              {{ target.subtitle || target.description || '购买后立即生效' }}
+            </p>
           </div>
           <strong>{{ moneyText(target.price) }}</strong>
         </div>
@@ -496,7 +530,7 @@ defineExpose({ open });
           <RadioGroup
             v-model:value="payChannel"
             class="package-pay__channels"
-            :class="{ 'is-single': !alipayUsable }"
+            :class="{ 'is-single': !onlinePayUsable }"
           >
             <Radio class="package-pay__channel" value="BALANCE">
               <div class="package-pay__channel-title">
@@ -507,8 +541,8 @@ defineExpose({ open });
                 {{
                   balanceEnough || amount <= 0
                     ? '使用账户余额直接购买'
-                    : alipayUsable
-                      ? '余额不足，请先充值或选择支付宝'
+                    : onlinePayUsable
+                      ? '余额不足，请先充值或选择在线支付'
                       : '余额不足，请先充值'
                 }}
               </p>
@@ -525,13 +559,27 @@ defineExpose({ open });
               </div>
               <p>支持网站、手机或扫码支付</p>
             </Radio>
+            <Radio
+              v-if="wechatUsable"
+              class="package-pay__channel"
+              :disabled="amount < 0.01"
+              value="WECHAT"
+            >
+              <div class="package-pay__channel-title">
+                <IconifyIcon class="size-5" icon="lucide:qr-code" />
+                <span>微信支付</span>
+              </div>
+              <p>生成微信二维码，使用微信扫码支付</p>
+            </Radio>
           </RadioGroup>
         </div>
 
         <div v-if="payChannel === 'ALIPAY'" class="package-pay__section">
           <div class="package-pay__section-head">
             <span>支付宝方式</span>
-            <em>{{ clientType === 'MOBILE' ? '已识别手机端' : '已识别电脑端' }}</em>
+            <em>{{
+              clientType === 'MOBILE' ? '已识别手机端' : '已识别电脑端'
+            }}</em>
           </div>
           <RadioGroup
             v-model:value="preferredProduct"
@@ -570,9 +618,18 @@ defineExpose({ open });
           </div>
           <div v-if="order.qrCode" class="package-pay__qrcode">
             <QRCode :bordered="false" :size="180" :value="order.qrCode" />
-            <p>请使用支付宝扫码完成支付</p>
+            <p>
+              {{
+                order.payChannel === 'WECHAT'
+                  ? '请使用微信扫码完成支付'
+                  : '请使用支付宝扫码完成支付'
+              }}
+            </p>
           </div>
-          <div v-else-if="order.payChannel === 'ALIPAY'" class="package-pay__tip">
+          <div
+            v-else-if="order.payChannel === 'ALIPAY'"
+            class="package-pay__tip"
+          >
             支付页面已打开，完成支付后系统会自动确认并开通套餐。
           </div>
         </div>
@@ -580,7 +637,7 @@ defineExpose({ open });
         <div class="package-pay__actions">
           <Button @click="closeModal">取消</Button>
           <Button
-            v-if="order?.payChannel === 'ALIPAY'"
+            v-if="order && order.payChannel !== 'BALANCE'"
             :loading="syncLoading"
             @click="syncCurrentOrder()"
           >
@@ -609,28 +666,28 @@ defineExpose({ open });
 
 .package-pay__summary,
 .package-pay__order {
+  padding: 14px;
+  background: hsl(var(--background));
   border: 1px solid hsl(var(--border));
   border-radius: 8px;
-  background: hsl(var(--background));
-  padding: 14px;
 }
 
 .package-pay__summary {
   display: grid;
   grid-template-columns: 48px minmax(0, 1fr) auto;
-  align-items: center;
   gap: 12px;
+  align-items: center;
 }
 
 .package-pay__icon {
   display: flex;
-  width: 48px;
-  height: 48px;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  background: hsl(var(--primary) / 8%);
+  width: 48px;
+  height: 48px;
   color: hsl(var(--primary));
+  background: hsl(var(--primary) / 8%);
+  border-radius: 8px;
 }
 
 .package-pay__main {
@@ -638,13 +695,13 @@ defineExpose({ open });
 }
 
 .package-pay__main h3 {
-  overflow: hidden;
   margin: 6px 0 2px;
-  color: hsl(var(--foreground));
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 18px;
   font-weight: 800;
   line-height: 24px;
-  text-overflow: ellipsis;
+  color: hsl(var(--foreground));
   white-space: nowrap;
 }
 
@@ -655,55 +712,55 @@ defineExpose({ open });
 .package-pay__section-head em,
 .package-pay__order-head span {
   margin: 0;
-  color: rgb(100 116 139);
   font-size: 13px;
   line-height: 20px;
+  color: rgb(100 116 139);
 }
 
 .package-pay__summary > strong {
-  color: #f45d66;
   font-size: 24px;
   font-weight: 900;
+  color: #f45d66;
   white-space: nowrap;
 }
 
 .package-pay__effect {
   display: grid;
   grid-template-columns: 20px minmax(0, 1fr);
-  align-items: flex-start;
   gap: 10px;
+  align-items: flex-start;
+  padding: 12px;
+  color: hsl(var(--primary));
+  background: hsl(var(--primary) / 6%);
   border: 1px solid hsl(var(--primary) / 24%);
   border-radius: 8px;
-  background: hsl(var(--primary) / 6%);
-  color: hsl(var(--primary));
-  padding: 12px;
 }
 
 .package-pay__effect.is-warning {
-  border-color: #f6c56b;
-  background: #fff8e8;
   color: #b36b00;
+  background: #fff8e8;
+  border-color: #f6c56b;
 }
 
 .package-pay__effect.is-danger {
-  border-color: #ff7875;
-  background: #fff1f0;
   color: #cf1322;
+  background: #fff1f0;
+  border-color: #ff7875;
 }
 
 .package-pay__effect strong {
   display: block;
-  color: inherit;
   font-size: 14px;
   font-weight: 800;
   line-height: 20px;
+  color: inherit;
 }
 
 .package-pay__effect p {
   margin: 2px 0 0;
-  color: hsl(var(--foreground) / 72%);
   font-size: 13px;
   line-height: 20px;
+  color: hsl(var(--foreground) / 72%);
 }
 
 .package-pay__section {
@@ -714,15 +771,15 @@ defineExpose({ open });
 
 .package-pay__section-head {
   display: flex;
+  gap: 12px;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
 }
 
 .package-pay__section-head span {
-  color: hsl(var(--foreground));
   font-size: 14px;
   font-weight: 800;
+  color: hsl(var(--foreground));
 }
 
 .package-pay__channels {
@@ -738,11 +795,11 @@ defineExpose({ open });
 .package-pay__channel {
   display: block;
   height: 100%;
+  padding: 12px;
   margin: 0;
+  background: hsl(var(--background));
   border: 1px solid hsl(var(--border));
   border-radius: 8px;
-  background: hsl(var(--background));
-  padding: 12px;
   transition:
     border-color 0.2s ease,
     background-color 0.2s ease;
@@ -750,17 +807,17 @@ defineExpose({ open });
 
 .package-pay__channel:has(.ant-radio-wrapper-checked),
 .package-pay__channel:has(.ant-radio-checked) {
-  border-color: hsl(var(--primary) / 60%);
   background: hsl(var(--primary) / 5%);
+  border-color: hsl(var(--primary) / 60%);
 }
 
 .package-pay__channel-title {
   display: inline-flex;
-  align-items: center;
   gap: 8px;
-  color: hsl(var(--foreground));
+  align-items: center;
   font-size: 14px;
   font-weight: 800;
+  color: hsl(var(--foreground));
 }
 
 .package-pay__channel-title :deep(svg) {
@@ -785,40 +842,40 @@ defineExpose({ open });
 
 .package-pay__order-head {
   display: flex;
+  gap: 12px;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
 }
 
 .package-pay__order-head strong {
   display: block;
   margin-top: 2px;
-  color: hsl(var(--foreground));
   font-size: 13px;
   font-weight: 700;
   line-height: 20px;
+  color: hsl(var(--foreground));
   word-break: break-all;
 }
 
 .package-pay__qrcode {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 10px;
+  align-items: center;
   margin-top: 14px;
 }
 
 .package-pay__tip {
-  margin-top: 12px;
-  border-radius: 8px;
-  background: hsl(var(--primary) / 7%);
   padding: 12px;
+  margin-top: 12px;
+  background: hsl(var(--primary) / 7%);
+  border-radius: 8px;
 }
 
 .package-pay__actions {
   display: flex;
-  justify-content: flex-end;
   gap: 8px;
+  justify-content: flex-end;
 }
 
 :global(.dark) .package-pay__main p,

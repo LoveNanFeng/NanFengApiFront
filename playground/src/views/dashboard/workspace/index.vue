@@ -1,8 +1,7 @@
 <script lang="ts" setup>
-import type {
-  WorkbenchQuickNavItem,
-} from '@vben/common-ui';
+import type { WorkbenchQuickNavItem } from '@vben/common-ui';
 import type { EchartsUIType } from '@vben/plugins/echarts';
+
 import type {
   AdminWorkbenchStats,
   UserCallTrendKey,
@@ -12,13 +11,17 @@ import type {
 import type { NoticeApi } from '#/api/notice';
 import type { RechargeApi } from '#/api/payment';
 
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from 'vue';
 import { useRouter } from 'vue-router';
 
-import {
-  useVbenDrawer,
-  WorkbenchHeader,
-} from '@vben/common-ui';
+import { useVbenDrawer, WorkbenchHeader } from '@vben/common-ui';
 import { IconifyIcon } from '@vben/icons';
 import { EchartsUI, useEcharts } from '@vben/plugins/echarts';
 import { preferences } from '@vben/preferences';
@@ -28,15 +31,15 @@ import { openWindow } from '@vben/utils';
 import {
   Button,
   InputNumber,
+  message,
   Modal,
   QRCode,
   Radio,
   RadioGroup,
   Spin,
-  Tag,
-  Tabs,
   TabPane,
-  message,
+  Tabs,
+  Tag,
 } from 'ant-design-vue';
 
 import {
@@ -91,11 +94,11 @@ function defaultUserStats(): UserWorkbenchStats {
       sevenDays: emptyCallTrend(),
       thirtyDays: emptyCallTrend(),
     },
-  balance: '0.0000',
-  currentPackageName: '普通用户',
-  currentPackageType: '基础账户',
-  dailyLimit: 0,
-  dailyLimitUnlimited: false,
+    balance: '0.0000',
+    currentPackageName: '普通用户',
+    currentPackageType: '基础账户',
+    dailyLimit: 0,
+    dailyLimitUnlimited: false,
     failedCalls: 0,
     failedRate: '0%',
     hasAnyPackage: false,
@@ -103,14 +106,14 @@ function defaultUserStats(): UserWorkbenchStats {
     interfacePackageCount: 0,
     interfacePackages: [],
     memberPackage: null,
-  points: 0,
-  qpsLimit: 1,
-  qpsLimitUnlimited: false,
-  remainingCalls: 0,
-  remainingUnlimited: false,
-  successCalls: 0,
-  successRate: '0%',
-  todayCalls: 0,
+    points: 0,
+    qpsLimit: 1,
+    qpsLimitUnlimited: false,
+    remainingCalls: 0,
+    remainingUnlimited: false,
+    successCalls: 0,
+    successRate: '0%',
+    todayCalls: 0,
   };
 }
 
@@ -182,6 +185,8 @@ const rechargeLoading = ref(false);
 const rechargeSyncLoading = ref(false);
 const rechargeCapabilities = ref<null | RechargeApi.Capabilities>(null);
 const rechargeOrder = ref<null | RechargeApi.RechargeOrder>(null);
+const rechargePayChannel =
+  ref<Exclude<RechargeApi.PayChannel, 'BALANCE'>>('ALIPAY');
 const rechargePreferredProduct = ref<RechargeApi.PayProduct>('AUTO');
 let rechargeTimer: number | undefined;
 
@@ -231,6 +236,43 @@ const rechargeDefaultProductName = computed(() =>
   payProductName(rechargeDefaultProduct.value),
 );
 
+const rechargeAlipayUsable = computed(() => {
+  const capabilities = rechargeCapabilities.value;
+  return (
+    !!capabilities?.alipayEnabled &&
+    (capabilities.websitePayEnabled ||
+      capabilities.wapPayEnabled ||
+      capabilities.facePayEnabled)
+  );
+});
+
+const rechargeWechatUsable = computed(
+  () => !!rechargeCapabilities.value?.wechatNativePayEnabled,
+);
+
+const rechargeChannelOptions = computed(() => {
+  const options: Array<{
+    description: string;
+    label: string;
+    value: Exclude<RechargeApi.PayChannel, 'BALANCE'>;
+  }> = [];
+  if (rechargeAlipayUsable.value) {
+    options.push({
+      description: '支持网站、手机或支付宝扫码支付',
+      label: '支付宝',
+      value: 'ALIPAY',
+    });
+  }
+  if (rechargeWechatUsable.value) {
+    options.push({
+      description: '生成微信二维码，使用微信扫码支付',
+      label: '微信支付',
+      value: 'WECHAT',
+    });
+  }
+  return options;
+});
+
 const rechargeProductOptions = computed(() => {
   const capabilities = rechargeCapabilities.value;
   if (!capabilities) {
@@ -242,7 +284,10 @@ const rechargeProductOptions = computed(() => {
       value: 'AUTO',
     },
   ];
-  if (rechargeClientType.value === 'DESKTOP' && capabilities.websitePayEnabled) {
+  if (
+    rechargeClientType.value === 'DESKTOP' &&
+    capabilities.websitePayEnabled
+  ) {
     options.push({ label: '网站支付', value: 'PAGE' });
   }
   if (rechargeClientType.value === 'MOBILE' && capabilities.wapPayEnabled) {
@@ -270,12 +315,14 @@ const selectedRechargeAmountOption = computed(() =>
   ),
 );
 
-const selectedRechargeGiftAmount = computed(() =>
-  selectedRechargeAmountOption.value?.giftAmount ?? 0,
+const selectedRechargeGiftAmount = computed(
+  () => selectedRechargeAmountOption.value?.giftAmount ?? 0,
 );
 
 const selectedRechargeCreditAmount = computed(
-  () => normalizeMoneyNumber(rechargeAmount.value) + selectedRechargeGiftAmount.value,
+  () =>
+    normalizeMoneyNumber(rechargeAmount.value) +
+    selectedRechargeGiftAmount.value,
 );
 
 const welcomeDescription = computed(() =>
@@ -364,13 +411,17 @@ const headerAssets = computed<HeaderAssetItem[]>(() => [
   },
 ]);
 
-const interfacePackages = computed(() => userStats.value.interfacePackages ?? []);
+const interfacePackages = computed(
+  () => userStats.value.interfacePackages ?? [],
+);
 const interfacePackageTabText = computed(
   () => `接口套餐 (${userStats.value.interfacePackageCount})`,
 );
 
 const usePerInterfaceQuota = computed(
-  () => !userStats.value.hasMemberPackage && userStats.value.interfacePackageCount > 1,
+  () =>
+    !userStats.value.hasMemberPackage &&
+    userStats.value.interfacePackageCount > 1,
 );
 
 const metricCards = computed(() => [
@@ -379,9 +430,9 @@ const metricCards = computed(() => [
     footerLabel: '剩余次数',
     footerValue: usePerInterfaceQuota.value
       ? '见明细'
-      : userStats.value.remainingUnlimited
-      ? '无限'
-      : formatCount(userStats.value.remainingCalls),
+      : (userStats.value.remainingUnlimited
+        ? '无限'
+        : formatCount(userStats.value.remainingCalls)),
     icon: 'lucide:activity',
     title: '今日调用',
     value: formatCount(userStats.value.todayCalls),
@@ -406,17 +457,17 @@ const metricCards = computed(() => [
     accent: '#4f46e5',
     footerLabel: 'QPS',
     footerValue: usePerInterfaceQuota.value
-        ? '见明细'
-      : userStats.value.qpsLimitUnlimited
+      ? '见明细'
+      : (userStats.value.qpsLimitUnlimited
         ? '不限'
-        : formatCount(userStats.value.qpsLimit),
+        : formatCount(userStats.value.qpsLimit)),
     icon: 'lucide:gauge',
     title: '每日限额',
     value: usePerInterfaceQuota.value
       ? '分接口'
-      : userStats.value.dailyLimitUnlimited
+      : (userStats.value.dailyLimitUnlimited
         ? '不限'
-        : formatCount(userStats.value.dailyLimit),
+        : formatCount(userStats.value.dailyLimit)),
   },
 ]);
 
@@ -429,7 +480,9 @@ const userQuickActions = computed<UserQuickActionItem[]>(() => [
       : '先开通套餐或点数，接口调用更稳定',
     icon: 'lucide:shopping-bag',
     title: '购买套餐',
-    url: userStats.value.hasAnyPackage ? '/purchase/interface' : '/purchase/global',
+    url: userStats.value.hasAnyPackage
+      ? '/purchase/interface'
+      : '/purchase/global',
   },
   {
     accent: '#14b8a6',
@@ -487,10 +540,15 @@ const callTrendOptions: Array<{
     value: 'oneYear',
   },
 ];
-const defaultCallTrendOption = callTrendOptions[0]!;
+const defaultCallTrendOption = callTrendOptions[0] ?? {
+  description: '按日汇总',
+  label: '近7日',
+  value: 'sevenDays',
+};
 
 const activeCallTrend = computed(
-  () => userStats.value.callTrends?.[activeCallTrendKey.value] ?? emptyCallTrend(),
+  () =>
+    userStats.value.callTrends?.[activeCallTrendKey.value] ?? emptyCallTrend(),
 );
 
 const activeCallTrendOption = computed(
@@ -609,7 +667,9 @@ function isSameMoneyValue(
 
 function formatRechargeAmount(value: number | string | undefined) {
   const numberValue = normalizeMoneyNumber(value);
-  return Number.isInteger(numberValue) ? String(numberValue) : numberValue.toFixed(2);
+  return Number.isInteger(numberValue)
+    ? String(numberValue)
+    : numberValue.toFixed(2);
 }
 
 function limitText(value: number | string) {
@@ -977,6 +1037,7 @@ function payProductName(value?: string) {
   if (value === 'PAGE') return '电脑网站支付';
   if (value === 'WAP') return '手机网站支付';
   if (value === 'FACE') return '当面付扫码支付';
+  if (value === 'NATIVE') return '扫码支付';
   return '';
 }
 
@@ -997,6 +1058,9 @@ function stopRechargePolling() {
 
 async function loadRechargeCapabilities() {
   rechargeCapabilities.value = await getRechargeCapabilities();
+  rechargePayChannel.value =
+    rechargeCapabilities.value.defaultPayChannel ??
+    (rechargeAlipayUsable.value ? 'ALIPAY' : 'WECHAT');
   rechargePreferredProduct.value = 'AUTO';
 }
 
@@ -1038,7 +1102,7 @@ function createAndSubmitAlipayForm(
   }
   const form = document.createElement('form');
   form.method = 'post';
-  form.acceptCharset = 'UTF-8';
+  form.acceptCharset = 'utf8';
   form.action = order.formActionUrl || order.gatewayUrl;
   form.target = target;
   form.style.display = 'none';
@@ -1057,7 +1121,10 @@ function createAndSubmitAlipayForm(
   window.setTimeout(() => form.remove(), 1000);
 }
 
-function openAlipayPayment(order: RechargeApi.RechargeOrder, paymentWindow: null | Window) {
+function openAlipayPayment(
+  order: RechargeApi.RechargeOrder,
+  paymentWindow: null | Window,
+) {
   if (order.qrCode) {
     paymentWindow?.close();
     return;
@@ -1088,6 +1155,7 @@ function expectedRechargePayProduct(): '' | RechargeApi.PayProduct {
 
 function shouldPreopenPaymentWindow() {
   return (
+    rechargePayChannel.value === 'ALIPAY' &&
     rechargeClientType.value === 'DESKTOP' &&
     expectedRechargePayProduct() !== 'FACE'
   );
@@ -1100,7 +1168,10 @@ function startRechargePolling(orderNo: string) {
   }, 3000);
 }
 
-async function syncCurrentRechargeOrder(orderNo?: string, showPendingMessage = true) {
+async function syncCurrentRechargeOrder(
+  orderNo?: string,
+  showPendingMessage = true,
+) {
   const currentOrderNo = orderNo ?? rechargeOrder.value?.orderNo;
   if (!currentOrderNo || rechargeSyncLoading.value) {
     return;
@@ -1152,13 +1223,23 @@ async function submitRecharge() {
     const order = await createRechargeOrder({
       amount,
       clientType: rechargeClientType.value,
+      payChannel: rechargePayChannel.value,
       preferredProduct: rechargePreferredProduct.value,
     });
     rechargeOrder.value = order;
-    openAlipayPayment(order, paymentWindow);
-    if (order.payProduct === 'FACE') {
+    if (order.payChannel === 'ALIPAY') {
+      openAlipayPayment(order, paymentWindow);
+    } else {
+      paymentWindow?.close();
+    }
+    if (order.payChannel === 'WECHAT') {
+      message.success('请使用微信扫码完成支付');
+    } else if (order.payProduct === 'FACE') {
       message.success('请使用支付宝扫码完成支付');
-    } else if (order.payProduct === 'WAP' && rechargeClientType.value === 'MOBILE') {
+    } else if (
+      order.payProduct === 'WAP' &&
+      rechargeClientType.value === 'MOBILE'
+    ) {
       message.success('正在跳转支付宝支付');
     } else {
       message.success('支付页面已打开，支付完成后会自动刷新余额');
@@ -1243,7 +1324,9 @@ watch(
       :avatar="userStore.userInfo?.avatar || preferences.app.defaultAvatar"
     >
       <template #title>
-        早安，{{ userStore.userInfo?.realName || userStore.userInfo?.username }}，欢迎回到工作台
+        早安，{{
+          userStore.userInfo?.realName || userStore.userInfo?.username
+        }}，欢迎回到工作台
       </template>
       <template #description>
         {{ welcomeDescription }}
@@ -1275,7 +1358,9 @@ watch(
                       : 'lucide:panel-right-open'
                   "
                 />
-                <span>{{ item.action === 'balanceRecharge' ? '充值' : '查看详情' }}</span>
+                <span>{{
+                  item.action === 'balanceRecharge' ? '充值' : '查看详情'
+                }}</span>
               </button>
             </div>
           </div>
@@ -1299,13 +1384,20 @@ watch(
           <span class="user-quick-action__content">
             <span class="user-quick-action__title">
               {{ item.title }}
-              <Tag v-if="item.badge" class="user-quick-action__badge" color="blue">
+              <Tag
+                v-if="item.badge"
+                class="user-quick-action__badge"
+                color="blue"
+              >
                 {{ item.badge }}
               </Tag>
             </span>
             <span class="user-quick-action__desc">{{ item.description }}</span>
           </span>
-          <IconifyIcon class="user-quick-action__arrow" icon="lucide:arrow-right" />
+          <IconifyIcon
+            class="user-quick-action__arrow"
+            icon="lucide:arrow-right"
+          />
         </button>
       </div>
 
@@ -1318,10 +1410,14 @@ watch(
         >
           <div class="flex items-start justify-between">
             <div>
-              <div class="text-base font-medium text-gray-700 dark:text-gray-200">
+              <div
+                class="text-base font-medium text-gray-700 dark:text-gray-200"
+              >
                 {{ item.title }}
               </div>
-              <div class="mt-7 text-4xl font-semibold leading-none text-gray-950 dark:text-gray-50">
+              <div
+                class="mt-7 text-4xl font-semibold leading-none text-gray-950 dark:text-gray-50"
+              >
                 {{ item.value }}
               </div>
             </div>
@@ -1344,7 +1440,8 @@ watch(
             <div>
               <div class="user-call-trend-title">调用记录</div>
               <div class="user-call-trend-desc">
-                {{ activeCallTrendOption.description }} · 总计 {{ callTrendTotalText }}
+                {{ activeCallTrendOption.description }} · 总计
+                {{ callTrendTotalText }}
               </div>
             </div>
             <div class="user-call-trend-tabs" aria-label="调用记录时间范围">
@@ -1392,7 +1489,9 @@ watch(
                 <div class="user-notice-item__main">
                   <div class="user-notice-item__title-row">
                     <Tag v-if="item.isTop === 1" color="blue">置顶</Tag>
-                    <span class="user-notice-item__title">{{ item.title }}</span>
+                    <span class="user-notice-item__title">{{
+                      item.title
+                    }}</span>
                   </div>
                   <div class="user-notice-item__summary">
                     {{ item.summary || '暂无摘要' }}
@@ -1414,7 +1513,6 @@ watch(
           </Spin>
         </section>
       </div>
-
     </template>
 
     <div v-else class="admin-workbench">
@@ -1671,7 +1769,10 @@ watch(
                 </span>
               </div>
 
-              <div v-if="interfacePackages.length > 0" class="package-detail-list">
+              <div
+                v-if="interfacePackages.length > 0"
+                class="package-detail-list"
+              >
                 <article
                   v-for="item in interfacePackages"
                   :key="item.userPackageId"
@@ -1708,7 +1809,12 @@ watch(
                     <div>
                       <span>剩余次数</span>
                       <strong>
-                        {{ remainingText(item.remainingUnlimited, item.remainingCalls) }}
+                        {{
+                          remainingText(
+                            item.remainingUnlimited,
+                            item.remainingCalls,
+                          )
+                        }}
                       </strong>
                     </div>
                     <div>
@@ -1764,10 +1870,8 @@ watch(
               <button
                 v-for="item in dailyPopupNotices"
                 :key="item.id"
-                :class="[
-                  'daily-notice__tab',
-                  item.id === activeDailyNotice?.id && 'is-active',
-                ]"
+                class="daily-notice__tab"
+                :class="[item.id === activeDailyNotice?.id && 'is-active']"
                 type="button"
                 @click="activeDailyNoticeId = item.id"
               >
@@ -1785,7 +1889,9 @@ watch(
                     {{ activeDailyNotice.publishTime || '今日公告' }}
                   </div>
                 </div>
-                <Tag v-if="activeDailyNotice.isTop === 1" color="blue">置顶</Tag>
+                <Tag v-if="activeDailyNotice.isTop === 1" color="blue">
+                  置顶
+                </Tag>
               </div>
 
               <div class="daily-notice__content">
@@ -1902,6 +2008,26 @@ watch(
           <div class="recharge-field">
             <label>支付方式</label>
             <RadioGroup
+              v-model:value="rechargePayChannel"
+              class="recharge-methods"
+            >
+              <Radio
+                v-for="item in rechargeChannelOptions"
+                :key="item.value"
+                :value="item.value"
+              >
+                {{ item.label }}
+              </Radio>
+            </RadioGroup>
+            <div class="recharge-capability-tags">
+              <Tag v-if="rechargeAlipayUsable" color="processing"> 支付宝 </Tag>
+              <Tag v-if="rechargeWechatUsable" color="success"> 微信扫码 </Tag>
+            </div>
+          </div>
+
+          <div v-if="rechargePayChannel === 'ALIPAY'" class="recharge-field">
+            <label>支付宝方式</label>
+            <RadioGroup
               v-model:value="rechargePreferredProduct"
               class="recharge-methods"
             >
@@ -1914,7 +2040,10 @@ watch(
               </Radio>
             </RadioGroup>
             <div v-if="rechargeCapabilities" class="recharge-capability-tags">
-              <Tag v-if="rechargeCapabilities.websitePayEnabled" color="processing">
+              <Tag
+                v-if="rechargeCapabilities.websitePayEnabled"
+                color="processing"
+              >
                 网站支付
               </Tag>
               <Tag v-if="rechargeCapabilities.wapPayEnabled" color="success">
@@ -1932,7 +2061,11 @@ watch(
                 <span>订单号</span>
                 <strong>{{ rechargeOrder.orderNo }}</strong>
               </div>
-              <Tag :color="rechargeOrder.status === 'PAID' ? 'success' : 'processing'">
+              <Tag
+                :color="
+                  rechargeOrder.status === 'PAID' ? 'success' : 'processing'
+                "
+              >
                 {{ rechargeOrder.status === 'PAID' ? '已支付' : '待支付' }}
               </Tag>
             </div>
@@ -1942,12 +2075,27 @@ watch(
                 赠送 {{ formatMoney(rechargeOrder.giftAmount ?? 0) }}
               </span>
               <strong>
-                到账 {{ formatMoney(rechargeOrder.creditAmount ?? rechargeOrder.amount) }}
+                到账
+                {{
+                  formatMoney(
+                    rechargeOrder.creditAmount ?? rechargeOrder.amount,
+                  )
+                }}
               </strong>
             </div>
             <div v-if="rechargeOrder.qrCode" class="recharge-qrcode">
-              <QRCode :bordered="false" :size="180" :value="rechargeOrder.qrCode" />
-              <p>请使用支付宝扫码完成支付</p>
+              <QRCode
+                :bordered="false"
+                :size="180"
+                :value="rechargeOrder.qrCode"
+              />
+              <p>
+                {{
+                  rechargeOrder.payChannel === 'WECHAT'
+                    ? '请使用微信扫码完成支付'
+                    : '请使用支付宝扫码完成支付'
+                }}
+              </p>
             </div>
             <div v-else class="recharge-order-tip">
               支付页面已打开，完成支付后系统会自动刷新余额。
@@ -1991,15 +2139,15 @@ watch(
 .admin-metric-card {
   position: relative;
   display: flex;
-  min-height: 132px;
-  min-width: 0;
-  align-items: flex-start;
   gap: 12px;
+  align-items: flex-start;
+  min-width: 0;
+  min-height: 132px;
+  padding: 18px;
   overflow: hidden;
+  background: hsl(var(--card));
   border: 1px solid hsl(var(--border));
   border-radius: 8px;
-  background: hsl(var(--card));
-  padding: 18px;
   box-shadow: 0 10px 28px rgb(15 23 42 / 5%);
 }
 
@@ -2009,9 +2157,9 @@ watch(
   bottom: -42px;
   width: 112px;
   height: 112px;
-  border-radius: 999px;
-  background: var(--admin-tone-soft);
   content: '';
+  background: var(--admin-tone-soft);
+  border-radius: 999px;
 }
 
 .admin-metric-card[data-tone='blue'] {
@@ -2052,37 +2200,37 @@ watch(
   justify-content: center;
   width: 42px;
   height: 42px;
-  border-radius: 8px;
-  background: var(--admin-tone-soft);
-  color: var(--admin-tone);
   font-size: 22px;
+  color: var(--admin-tone);
+  background: var(--admin-tone-soft);
+  border-radius: 8px;
 }
 
 .admin-metric-card__title {
-  color: rgb(100 116 139);
   font-size: 13px;
   font-weight: 600;
   line-height: 20px;
+  color: rgb(100 116 139);
 }
 
 .admin-metric-card__value {
-  overflow: hidden;
   margin-top: 10px;
-  color: hsl(var(--foreground));
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 28px;
   font-weight: 800;
   line-height: 34px;
-  text-overflow: ellipsis;
+  color: hsl(var(--foreground));
   white-space: nowrap;
 }
 
 .admin-metric-card__meta {
-  overflow: hidden;
   margin-top: 8px;
-  color: rgb(100 116 139);
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 12px;
   line-height: 18px;
-  text-overflow: ellipsis;
+  color: rgb(100 116 139);
   white-space: nowrap;
 }
 
@@ -2094,10 +2242,10 @@ watch(
 
 .admin-panel {
   min-width: 0;
+  padding: 18px;
+  background: hsl(var(--card));
   border: 1px solid hsl(var(--border));
   border-radius: 8px;
-  background: hsl(var(--card));
-  padding: 18px;
   box-shadow: 0 10px 28px rgb(15 23 42 / 5%);
 }
 
@@ -2107,25 +2255,25 @@ watch(
 
 .admin-panel__head {
   display: flex;
+  gap: 12px;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
   margin-bottom: 16px;
 }
 
 .admin-panel__head h2 {
   margin: 0;
-  color: hsl(var(--foreground));
   font-size: 18px;
   font-weight: 800;
   line-height: 24px;
+  color: hsl(var(--foreground));
 }
 
 .admin-panel__head p {
   margin: 4px 0 0;
-  color: rgb(100 116 139);
   font-size: 13px;
   line-height: 20px;
+  color: rgb(100 116 139);
 }
 
 .admin-chart {
@@ -2141,28 +2289,30 @@ watch(
 
 .admin-table__row {
   display: grid;
-  grid-template-columns: minmax(180px, 1.6fr) minmax(70px, 0.5fr) minmax(80px, 0.6fr) minmax(90px, 0.7fr) minmax(80px, 0.5fr);
+  grid-template-columns:
+    minmax(180px, 1.6fr) minmax(70px, 0.5fr) minmax(80px, 0.6fr)
+    minmax(90px, 0.7fr) minmax(80px, 0.5fr);
   gap: 12px;
   align-items: center;
   width: 100%;
   min-height: 54px;
-  border: 0;
-  border-radius: 8px;
-  background: hsl(var(--muted) / 38%);
-  color: hsl(var(--foreground));
+  padding: 10px 12px;
   font-size: 13px;
   line-height: 20px;
-  padding: 10px 12px;
+  color: hsl(var(--foreground));
   text-align: left;
+  background: hsl(var(--muted) / 38%);
+  border: 0;
+  border-radius: 8px;
 }
 
 .admin-table__row--head {
   min-height: 36px;
-  background: transparent;
-  color: rgb(100 116 139);
+  padding-bottom: 0;
   font-size: 12px;
   font-weight: 700;
-  padding-bottom: 0;
+  color: rgb(100 116 139);
+  background: transparent;
 }
 
 .admin-table__row--clickable {
@@ -2185,21 +2335,21 @@ watch(
 .admin-user__main strong {
   display: block;
   overflow: hidden;
-  color: hsl(var(--foreground));
-  font-weight: 800;
   text-overflow: ellipsis;
+  font-weight: 800;
+  color: hsl(var(--foreground));
   white-space: nowrap;
 }
 
 .admin-table__main small,
 .admin-user__main small {
   display: block;
-  overflow: hidden;
   margin-top: 2px;
-  color: rgb(100 116 139);
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 12px;
   line-height: 18px;
-  text-overflow: ellipsis;
+  color: rgb(100 116 139);
   white-space: nowrap;
 }
 
@@ -2213,17 +2363,17 @@ watch(
 .admin-alert,
 .admin-user {
   display: flex;
+  gap: 10px;
   align-items: center;
   width: 100%;
   min-width: 0;
+  padding: 12px;
+  color: hsl(var(--foreground));
+  text-align: left;
+  cursor: pointer;
+  background: hsl(var(--background));
   border: 1px solid hsl(var(--border));
   border-radius: 8px;
-  background: hsl(var(--background));
-  color: hsl(var(--foreground));
-  cursor: pointer;
-  gap: 10px;
-  padding: 12px;
-  text-align: left;
   transition:
     border-color 0.2s ease,
     transform 0.2s ease;
@@ -2240,8 +2390,8 @@ watch(
   flex: 0 0 auto;
   width: 9px;
   height: 9px;
-  border-radius: 999px;
   background: var(--alert-color);
+  border-radius: 999px;
   box-shadow: 0 0 0 4px var(--alert-soft);
 }
 
@@ -2266,29 +2416,29 @@ watch(
 }
 
 .admin-alert__body {
-  min-width: 0;
   flex: 1 1 auto;
+  min-width: 0;
 }
 
 .admin-alert__body strong {
   display: block;
   overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 14px;
   font-weight: 800;
   line-height: 20px;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .admin-alert__body small {
   display: -webkit-box;
-  overflow: hidden;
   margin-top: 3px;
-  color: rgb(100 116 139);
+  overflow: hidden;
+  -webkit-line-clamp: 2;
   font-size: 12px;
   line-height: 18px;
+  color: rgb(100 116 139);
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
 }
 
 .admin-user__avatar {
@@ -2298,23 +2448,23 @@ watch(
   justify-content: center;
   width: 36px;
   height: 36px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #2563eb, #14b8a6);
-  color: white;
   font-weight: 800;
+  color: white;
+  background: linear-gradient(135deg, #2563eb, #14b8a6);
+  border-radius: 8px;
 }
 
 .admin-user__main {
-  min-width: 0;
   flex: 1 1 auto;
+  min-width: 0;
 }
 
 .admin-user__stat {
   flex: 0 0 auto;
-  color: hsl(var(--foreground));
   font-size: 18px;
   font-weight: 800;
   line-height: 24px;
+  color: hsl(var(--foreground));
 }
 
 .admin-quick-grid {
@@ -2325,17 +2475,17 @@ watch(
 
 .admin-quick {
   display: flex;
-  min-height: 78px;
+  gap: 10px;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  border: 1px solid hsl(var(--border));
-  border-radius: 8px;
-  background: hsl(var(--background));
+  min-height: 78px;
+  padding: 12px;
+  font-weight: 700;
   color: hsl(var(--foreground));
   cursor: pointer;
-  font-weight: 700;
-  padding: 12px;
+  background: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
   transition:
     border-color 0.2s ease,
     transform 0.2s ease;
@@ -2350,13 +2500,13 @@ watch(
 
 .admin-empty {
   display: flex;
-  min-height: 96px;
   align-items: center;
   justify-content: center;
+  min-height: 96px;
+  font-size: 13px;
+  color: rgb(100 116 139);
   border: 1px dashed hsl(var(--border));
   border-radius: 8px;
-  color: rgb(100 116 139);
-  font-size: 13px;
 }
 
 .daily-notice {
@@ -2366,11 +2516,11 @@ watch(
 }
 
 :deep(.daily-notice-modal-wrap .ant-modal-content) {
-  overflow: hidden;
   padding: 0;
+  overflow: hidden;
+  background: hsl(var(--card));
   border: 1px solid hsl(var(--border));
   border-radius: 12px;
-  background: hsl(var(--card));
   box-shadow: 0 18px 46px rgb(15 23 42 / 18%);
 }
 
@@ -2380,65 +2530,65 @@ watch(
 
 .daily-notice__modal-head {
   display: flex;
+  gap: 16px;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
   padding: 18px 20px;
-  border-bottom: 1px solid hsl(var(--border));
   background: linear-gradient(
     180deg,
     hsl(var(--muted) / 42%),
     hsl(var(--card))
   );
+  border-bottom: 1px solid hsl(var(--border));
 }
 
 .daily-notice__modal-title-wrap {
   display: flex;
-  min-width: 0;
-  align-items: center;
   gap: 12px;
+  align-items: center;
+  min-width: 0;
 }
 
 .daily-notice__modal-icon {
   display: inline-flex;
-  width: 40px;
-  height: 40px;
   flex: 0 0 40px;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  background: hsl(var(--primary) / 10%);
-  color: hsl(var(--primary));
+  width: 40px;
+  height: 40px;
   font-size: 20px;
+  color: hsl(var(--primary));
+  background: hsl(var(--primary) / 10%);
+  border-radius: 8px;
 }
 
 .daily-notice__modal-title {
-  color: hsl(var(--foreground));
   font-size: 19px;
   font-weight: 800;
   line-height: 1.35;
+  color: hsl(var(--foreground));
 }
 
 .daily-notice__modal-subtitle {
   margin-top: 2px;
-  color: hsl(var(--muted-foreground));
   font-size: 13px;
   line-height: 1.4;
+  color: hsl(var(--muted-foreground));
 }
 
 .daily-notice__close {
   display: inline-flex;
-  width: 34px;
-  height: 34px;
   flex: 0 0 34px;
   align-items: center;
   justify-content: center;
+  width: 34px;
+  height: 34px;
+  font-size: 20px;
   color: hsl(var(--muted-foreground));
   cursor: pointer;
   background: transparent;
   border: 0;
   border-radius: 8px;
-  font-size: 20px;
   transition:
     background 0.2s ease,
     color 0.2s ease;
@@ -2461,9 +2611,9 @@ watch(
   gap: 8px;
   padding: 4px;
   overflow-x: auto;
+  background: hsl(var(--muted) / 45%);
   border: 1px solid hsl(var(--border));
   border-radius: 8px;
-  background: hsl(var(--muted) / 45%);
 }
 
 .daily-notice__tab {
@@ -2471,16 +2621,16 @@ watch(
   height: 32px;
   padding: 0 12px;
   overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 32px;
   color: rgb(100 116 139);
+  white-space: nowrap;
   cursor: pointer;
   background: transparent;
   border: 0;
   border-radius: 6px;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 32px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .daily-notice__tab.is-active {
@@ -2495,37 +2645,37 @@ watch(
 
 .daily-notice__head {
   display: flex;
+  gap: 16px;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
   padding: 8px 0 16px;
   border-bottom: 1px solid hsl(var(--border));
 }
 
 .daily-notice__title {
   overflow: hidden;
-  color: hsl(var(--foreground));
+  text-overflow: ellipsis;
   font-size: 18px;
   font-weight: 800;
   line-height: 26px;
-  text-overflow: ellipsis;
+  color: hsl(var(--foreground));
   white-space: nowrap;
 }
 
 .daily-notice__meta {
   margin-top: 2px;
-  color: rgb(100 116 139);
   font-size: 13px;
   line-height: 20px;
+  color: rgb(100 116 139);
 }
 
 .daily-notice__content {
   max-height: min(46vh, 420px);
   padding: 18px 0 0;
   overflow: auto;
-  color: hsl(var(--foreground));
   font-size: 15px;
   line-height: 1.8;
+  color: hsl(var(--foreground));
 }
 
 .daily-notice__content :deep(.ProseMirror),
@@ -2545,11 +2695,11 @@ watch(
 
 .daily-notice__actions {
   display: flex;
-  justify-content: flex-end;
   gap: 8px;
+  justify-content: flex-end;
   padding: 14px 20px 18px;
-  border-top: 1px solid hsl(var(--border));
   background: hsl(var(--card));
+  border-top: 1px solid hsl(var(--border));
 }
 
 @media (max-width: 640px) {
@@ -2562,8 +2712,8 @@ watch(
   }
 
   .daily-notice__head {
-    align-items: flex-start;
     flex-direction: column;
+    align-items: flex-start;
   }
 
   .daily-notice__actions {
@@ -2606,37 +2756,37 @@ watch(
 
 .package-detail-section__head {
   display: flex;
+  gap: 12px;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 12px;
 }
 
 .package-detail-section__head h2 {
   margin: 0;
-  color: hsl(var(--foreground));
   font-size: 16px;
   font-weight: 800;
   line-height: 24px;
+  color: hsl(var(--foreground));
 }
 
 .package-detail-section__head p {
   margin: 2px 0 0;
-  color: rgb(100 116 139);
   font-size: 12px;
   line-height: 18px;
+  color: rgb(100 116 139);
 }
 
 .package-detail-section__head > span {
   display: inline-flex;
-  height: 28px;
   flex: 0 0 auto;
   align-items: center;
-  border-radius: 6px;
-  background: hsl(var(--primary) / 8%);
-  color: hsl(var(--primary));
+  height: 28px;
+  padding: 0 10px;
   font-size: 12px;
   font-weight: 700;
-  padding: 0 10px;
+  color: hsl(var(--primary));
+  background: hsl(var(--primary) / 8%);
+  border-radius: 6px;
 }
 
 .package-detail-list {
@@ -2646,50 +2796,50 @@ watch(
 }
 
 .package-detail-card {
+  padding: 16px;
+  background: hsl(var(--background));
   border: 1px solid hsl(var(--border));
   border-radius: 8px;
-  background: hsl(var(--background));
   box-shadow: 0 12px 32px rgb(15 23 42 / 4%);
-  padding: 16px;
 }
 
 .package-detail-card__top {
   display: flex;
-  min-width: 0;
-  align-items: center;
   gap: 12px;
+  align-items: center;
+  min-width: 0;
 }
 
 .package-detail-card__icon {
   display: inline-flex;
-  width: 42px;
-  height: 42px;
   flex: 0 0 42px;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  background: hsl(var(--primary) / 8%);
-  color: hsl(var(--primary));
+  width: 42px;
+  height: 42px;
   font-size: 20px;
+  color: hsl(var(--primary));
+  background: hsl(var(--primary) / 8%);
+  border-radius: 8px;
 }
 
 .package-detail-card__name {
   overflow: hidden;
-  color: hsl(var(--foreground));
+  text-overflow: ellipsis;
   font-size: 16px;
   font-weight: 800;
   line-height: 24px;
-  text-overflow: ellipsis;
+  color: hsl(var(--foreground));
   white-space: nowrap;
 }
 
 .package-detail-card__desc {
-  overflow: hidden;
   margin-top: 2px;
-  color: rgb(100 116 139);
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 13px;
   line-height: 20px;
-  text-overflow: ellipsis;
+  color: rgb(100 116 139);
   white-space: nowrap;
 }
 
@@ -2702,15 +2852,15 @@ watch(
 
 .package-detail-tags span {
   display: inline-flex;
-  min-height: 26px;
   align-items: center;
-  border-radius: 6px;
-  background: hsl(var(--accent) / 62%);
-  color: rgb(100 116 139);
+  min-height: 26px;
+  padding: 5px 10px;
   font-size: 12px;
   font-weight: 600;
   line-height: 16px;
-  padding: 5px 10px;
+  color: rgb(100 116 139);
+  background: hsl(var(--accent) / 62%);
+  border-radius: 6px;
 }
 
 .package-detail-stats {
@@ -2723,40 +2873,40 @@ watch(
 .package-detail-stats div {
   min-width: 0;
   min-height: 58px;
+  padding: 10px;
+  background: hsl(var(--muted) / 34%);
   border: 1px solid hsl(var(--border));
   border-radius: 8px;
-  background: hsl(var(--muted) / 34%);
-  padding: 10px;
 }
 
 .package-detail-stats span {
   display: block;
-  color: rgb(100 116 139);
   font-size: 12px;
   line-height: 16px;
+  color: rgb(100 116 139);
 }
 
 .package-detail-stats strong {
   display: block;
-  overflow: hidden;
   margin-top: 6px;
-  color: hsl(var(--foreground));
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 18px;
   font-weight: 800;
   line-height: 22px;
-  text-overflow: ellipsis;
+  color: hsl(var(--foreground));
   white-space: nowrap;
 }
 
 .package-detail-empty {
-  border: 1px dashed hsl(var(--border));
-  border-radius: 8px;
-  background: hsl(var(--muted) / 28%);
-  color: rgb(100 116 139);
+  padding: 18px;
   font-size: 13px;
   line-height: 20px;
-  padding: 18px;
+  color: rgb(100 116 139);
   text-align: center;
+  background: hsl(var(--muted) / 28%);
+  border: 1px dashed hsl(var(--border));
+  border-radius: 8px;
 }
 
 .user-quick-actions {
@@ -2768,21 +2918,21 @@ watch(
 .user-quick-action {
   position: relative;
   display: flex;
+  gap: 12px;
+  align-items: center;
   min-width: 0;
   min-height: 92px;
-  align-items: center;
-  gap: 12px;
+  padding: 16px;
   overflow: hidden;
-  border: 1px solid hsl(var(--border));
-  border-radius: 8px;
+  color: hsl(var(--foreground));
+  text-align: left;
+  cursor: pointer;
   background:
     linear-gradient(135deg, rgb(255 255 255 / 86%), rgb(255 255 255 / 68%)),
     hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
   box-shadow: 0 12px 30px rgb(15 23 42 / 5%);
-  color: hsl(var(--foreground));
-  cursor: pointer;
-  padding: 16px;
-  text-align: left;
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease,
@@ -2795,13 +2945,17 @@ watch(
   bottom: -46px;
   width: 106px;
   height: 106px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--user-action-accent) 12%, transparent);
   content: '';
+  background: color-mix(in srgb, var(--user-action-accent) 12%, transparent);
+  border-radius: 999px;
 }
 
 .user-quick-action:hover {
-  border-color: color-mix(in srgb, var(--user-action-accent) 32%, hsl(var(--border)));
+  border-color: color-mix(
+    in srgb,
+    var(--user-action-accent) 32%,
+    hsl(var(--border))
+  );
   box-shadow: 0 16px 36px rgb(15 23 42 / 8%);
   transform: translateY(-2px);
 }
@@ -2814,27 +2968,27 @@ watch(
   justify-content: center;
   width: 42px;
   height: 42px;
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--user-action-accent) 11%, white);
-  color: var(--user-action-accent);
   font-size: 22px;
+  color: var(--user-action-accent);
+  background: color-mix(in srgb, var(--user-action-accent) 11%, white);
+  border-radius: 8px;
 }
 
 .user-quick-action__content {
   z-index: 1;
-  min-width: 0;
   flex: 1 1 auto;
+  min-width: 0;
 }
 
 .user-quick-action__title {
   display: flex;
-  min-width: 0;
-  align-items: center;
   gap: 6px;
-  color: hsl(var(--foreground));
+  align-items: center;
+  min-width: 0;
   font-size: 15px;
   font-weight: 800;
   line-height: 22px;
+  color: hsl(var(--foreground));
 }
 
 .user-quick-action__badge {
@@ -2844,20 +2998,20 @@ watch(
 
 .user-quick-action__desc {
   display: -webkit-box;
-  overflow: hidden;
   margin-top: 4px;
-  color: rgb(100 116 139);
+  overflow: hidden;
+  -webkit-line-clamp: 2;
   font-size: 12px;
   line-height: 18px;
+  color: rgb(100 116 139);
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
 }
 
 .user-quick-action__arrow {
   z-index: 1;
   flex: 0 0 auto;
-  color: rgb(148 163 184);
   font-size: 17px;
+  color: rgb(148 163 184);
   transition:
     color 0.2s ease,
     transform 0.2s ease;
@@ -2871,8 +3025,8 @@ watch(
 .user-metric-card {
   position: relative;
   min-height: 148px;
-  overflow: hidden;
   padding: 22px;
+  overflow: hidden;
   background:
     radial-gradient(
       circle at 96% 92%,
@@ -2891,8 +3045,8 @@ watch(
   left: 0;
   width: 100%;
   height: 3px;
-  background: var(--user-metric-accent);
   content: '';
+  background: var(--user-metric-accent);
   opacity: 0.72;
 }
 
@@ -2914,7 +3068,7 @@ watch(
   width: 36px;
   height: 36px;
   font-size: 20px;
-  background: color-mix(in srgb, currentColor 10%, hsl(var(--background)));
+  background: color-mix(in srgb, currentcolor 10%, hsl(var(--background)));
   border-radius: 8px;
 }
 
@@ -2935,17 +3089,17 @@ watch(
 }
 
 .user-call-trend-title {
-  color: hsl(var(--foreground));
   font-size: 16px;
   font-weight: 700;
   line-height: 24px;
+  color: hsl(var(--foreground));
 }
 
 .user-call-trend-desc {
   margin-top: 4px;
-  color: rgb(100 116 139);
   font-size: 13px;
   line-height: 20px;
+  color: rgb(100 116 139);
 }
 
 .user-call-trend-tabs {
@@ -2959,17 +3113,17 @@ watch(
 }
 
 .user-call-trend-tab {
-  height: 30px;
   min-width: 62px;
+  height: 30px;
   padding: 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 30px;
   color: rgb(100 116 139);
   cursor: pointer;
   background: transparent;
   border: 0;
   border-radius: 6px;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 30px;
   transition:
     background 0.18s ease,
     color 0.18s ease,
@@ -2989,56 +3143,56 @@ watch(
 
 .user-notice-card {
   display: flex;
-  min-height: 360px;
   flex-direction: column;
+  min-height: 360px;
   padding: 18px;
+  background: hsl(var(--background));
   border: 1px solid hsl(var(--border));
   border-radius: 8px;
-  background: hsl(var(--background));
   box-shadow: 0 12px 32px rgb(15 23 42 / 4%);
 }
 
 .user-notice-card__head {
   display: flex;
+  gap: 12px;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
   margin-bottom: 14px;
 }
 
 .user-notice-card__title {
-  color: hsl(var(--foreground));
   font-size: 16px;
   font-weight: 700;
   line-height: 24px;
+  color: hsl(var(--foreground));
 }
 
 .user-notice-card__desc {
   margin-top: 4px;
-  color: rgb(100 116 139);
   font-size: 13px;
   line-height: 20px;
+  color: rgb(100 116 139);
 }
 
 .user-notice-card__more {
-  height: 30px;
   flex: 0 0 auto;
-  border: 1px solid hsl(var(--border));
-  border-radius: 6px;
-  background: hsl(var(--background));
-  color: hsl(var(--primary));
-  cursor: pointer;
+  height: 30px;
+  padding: 0 10px;
   font-size: 13px;
   font-weight: 700;
-  padding: 0 10px;
+  color: hsl(var(--primary));
+  cursor: pointer;
+  background: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
   transition:
     background 0.2s ease,
     border-color 0.2s ease;
 }
 
 .user-notice-card__more:hover {
-  border-color: hsl(var(--primary) / 38%);
   background: hsl(var(--primary) / 7%);
+  border-color: hsl(var(--primary) / 38%);
 }
 
 .user-notice-list {
@@ -3049,17 +3203,17 @@ watch(
 
 .user-notice-item {
   display: flex;
-  width: 100%;
-  min-height: 56px;
+  gap: 10px;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  border: 1px solid hsl(var(--border));
-  border-radius: 8px;
-  background: hsl(var(--card));
-  cursor: pointer;
+  width: 100%;
+  min-height: 56px;
   padding: 10px 10px 10px 12px;
   text-align: left;
+  cursor: pointer;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
   transition:
     background 0.2s ease,
     border-color 0.2s ease,
@@ -3067,8 +3221,8 @@ watch(
 }
 
 .user-notice-item:hover {
-  border-color: hsl(var(--primary) / 32%);
   background: hsl(var(--primary) / 5%);
+  border-color: hsl(var(--primary) / 32%);
   transform: translateY(-1px);
 }
 
@@ -3078,18 +3232,18 @@ watch(
 
 .user-notice-item__title-row {
   display: flex;
-  min-width: 0;
-  align-items: center;
   gap: 6px;
+  align-items: center;
+  min-width: 0;
 }
 
 .user-notice-item__title {
   overflow: hidden;
-  color: hsl(var(--foreground));
+  text-overflow: ellipsis;
   font-size: 14px;
   font-weight: 700;
   line-height: 20px;
-  text-overflow: ellipsis;
+  color: hsl(var(--foreground));
   white-space: nowrap;
 }
 
@@ -3097,24 +3251,24 @@ watch(
   display: -webkit-box;
   margin-top: 4px;
   overflow: hidden;
-  color: rgb(100 116 139);
+  -webkit-line-clamp: 1;
   font-size: 12px;
   line-height: 18px;
+  color: rgb(100 116 139);
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 1;
 }
 
 .user-notice-item__time {
   margin-top: 4px;
-  color: rgb(100 116 139);
   font-size: 12px;
   line-height: 18px;
+  color: rgb(100 116 139);
 }
 
 .user-notice-item__arrow {
   flex: 0 0 auto;
-  color: rgb(148 163 184);
   font-size: 16px;
+  color: rgb(148 163 184);
 }
 
 .user-notice-item:hover .user-notice-item__arrow {
@@ -3123,22 +3277,22 @@ watch(
 
 .user-notice-empty {
   display: flex;
-  min-height: 250px;
   flex-direction: column;
+  gap: 10px;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  color: rgb(100 116 139);
+  min-height: 250px;
   font-size: 13px;
+  color: rgb(100 116 139);
 }
 
 .user-notice-empty svg {
   width: 38px;
   height: 38px;
-  border-radius: 10px;
-  background: hsl(var(--primary) / 8%);
-  color: hsl(var(--primary));
   padding: 9px;
+  color: hsl(var(--primary));
+  background: hsl(var(--primary) / 8%);
+  border-radius: 10px;
 }
 
 .workspace-notice-detail {
@@ -3147,27 +3301,27 @@ watch(
 
 .workspace-notice-detail__head {
   display: flex;
+  gap: 16px;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
   padding-bottom: 16px;
   border-bottom: 1px solid hsl(var(--border));
 }
 
 .workspace-notice-detail__title {
   overflow: hidden;
-  color: hsl(var(--foreground));
+  text-overflow: ellipsis;
   font-size: 24px;
   font-weight: 800;
   line-height: 1.35;
-  text-overflow: ellipsis;
+  color: hsl(var(--foreground));
 }
 
 .workspace-notice-detail__meta {
   margin-top: 6px;
-  color: rgb(100 116 139);
   font-size: 13px;
   line-height: 20px;
+  color: rgb(100 116 139);
 }
 
 .workspace-notice-detail__content {
@@ -3230,39 +3384,39 @@ watch(
 
 .user-asset-label {
   overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 13px;
   color: rgb(100 116 139);
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .user-asset-value {
-  overflow: hidden;
   margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 20px;
   font-weight: 650;
   line-height: 1.2;
   color: rgb(15 23 42);
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .user-asset-detail-btn {
   display: inline-flex;
-  height: 26px;
+  gap: 4px;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  height: 26px;
+  padding: 0 8px;
   margin-top: 8px;
-  border: 1px solid hsl(var(--primary) / 16%);
-  border-radius: 6px;
-  background: hsl(var(--primary) / 8%);
-  color: hsl(var(--primary));
-  cursor: pointer;
   font-size: 12px;
   font-weight: 700;
   line-height: 1;
-  padding: 0 8px;
+  color: hsl(var(--primary));
+  cursor: pointer;
+  background: hsl(var(--primary) / 8%);
+  border: 1px solid hsl(var(--primary) / 16%);
+  border-radius: 6px;
 }
 
 .user-asset-detail-btn:hover {
@@ -3270,8 +3424,8 @@ watch(
 }
 
 .user-asset-detail-btn.is-recharge {
-  border-color: hsl(var(--primary) / 22%);
   background: hsl(var(--primary) / 9%);
+  border-color: hsl(var(--primary) / 22%);
 }
 
 .user-asset-detail-btn.is-recharge:hover {
@@ -3286,31 +3440,31 @@ watch(
 
 .recharge-panel__summary {
   display: flex;
+  gap: 12px;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  padding: 14px 16px;
+  background: hsl(var(--muted) / 35%);
   border: 1px solid hsl(var(--border));
   border-radius: 8px;
-  background: hsl(var(--muted) / 35%);
-  padding: 14px 16px;
 }
 
 .recharge-panel__summary span,
 .recharge-field label,
 .recharge-order-box__head span {
   display: block;
-  color: rgb(100 116 139);
   font-size: 13px;
   line-height: 20px;
+  color: rgb(100 116 139);
 }
 
 .recharge-panel__summary strong {
   display: block;
   margin-top: 2px;
-  color: hsl(var(--foreground));
   font-size: 22px;
   font-weight: 800;
   line-height: 28px;
+  color: hsl(var(--foreground));
 }
 
 .recharge-field {
@@ -3331,19 +3485,19 @@ watch(
 }
 
 .recharge-quick-amounts button {
-  min-height: 32px;
-  border: 1px solid hsl(var(--border));
-  border-radius: 6px;
-  background: hsl(var(--background));
-  color: hsl(var(--foreground));
-  cursor: pointer;
   display: inline-flex;
-  align-items: center;
   gap: 6px;
+  align-items: center;
+  min-height: 32px;
+  padding: 5px 12px;
   font-size: 13px;
   font-weight: 700;
   line-height: 18px;
-  padding: 5px 12px;
+  color: hsl(var(--foreground));
+  cursor: pointer;
+  background: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
   transition:
     border-color 0.2s ease,
     background-color 0.2s ease,
@@ -3351,40 +3505,40 @@ watch(
 }
 
 .recharge-quick-amounts button small {
-  color: #f43f5e;
   font-size: 12px;
   font-weight: 700;
+  color: #f43f5e;
 }
 
 .recharge-quick-amounts button:hover,
 .recharge-quick-amounts button.is-active {
+  color: hsl(var(--primary));
   background: hsl(var(--primary) / 7%);
   border-color: hsl(var(--primary) / 40%);
-  color: hsl(var(--primary));
 }
 
 .recharge-gift-tip {
   display: flex;
-  align-items: center;
   gap: 8px;
-  border: 1px solid rgb(251 113 133 / 45%);
-  border-radius: 8px;
-  background: rgb(255 241 242);
-  color: rgb(159 18 57);
+  align-items: center;
+  padding: 9px 11px;
   font-size: 13px;
   line-height: 20px;
-  padding: 9px 11px;
+  color: rgb(159 18 57);
+  background: rgb(255 241 242);
+  border: 1px solid rgb(251 113 133 / 45%);
+  border-radius: 8px;
 }
 
 .recharge-gift-tip svg {
-  color: rgb(225 29 72);
   flex: none;
   font-size: 17px;
+  color: rgb(225 29 72);
 }
 
 .recharge-gift-tip strong {
-  color: rgb(225 29 72);
   font-weight: 800;
+  color: rgb(225 29 72);
 }
 
 .recharge-methods {
@@ -3394,80 +3548,80 @@ watch(
 }
 
 .recharge-order-box {
+  padding: 14px;
+  background: hsl(var(--background));
   border: 1px solid hsl(var(--border));
   border-radius: 8px;
-  background: hsl(var(--background));
-  padding: 14px;
 }
 
 .recharge-order-box__head {
   display: flex;
+  gap: 12px;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
 }
 
 .recharge-order-box__head strong {
   display: block;
   margin-top: 2px;
-  color: hsl(var(--foreground));
   font-size: 13px;
   font-weight: 700;
   line-height: 20px;
+  color: hsl(var(--foreground));
   word-break: break-all;
 }
 
 .recharge-order-amounts {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
   gap: 8px;
+  align-items: center;
   margin-top: 12px;
-  color: rgb(100 116 139);
   font-size: 13px;
+  color: rgb(100 116 139);
 }
 
 .recharge-order-amounts span,
 .recharge-order-amounts strong {
-  border-radius: 999px;
-  background: hsl(var(--muted));
-  line-height: 22px;
   padding: 0 9px;
+  line-height: 22px;
+  background: hsl(var(--muted));
+  border-radius: 999px;
 }
 
 .recharge-order-amounts strong {
-  background: hsl(var(--primary) / 8%);
-  color: hsl(var(--primary));
   font-weight: 800;
+  color: hsl(var(--primary));
+  background: hsl(var(--primary) / 8%);
 }
 
 .recharge-qrcode {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 10px;
+  align-items: center;
   margin-top: 14px;
 }
 
 .recharge-qrcode p,
 .recharge-order-tip {
   margin: 0;
-  color: rgb(100 116 139);
   font-size: 13px;
   line-height: 20px;
+  color: rgb(100 116 139);
 }
 
 .recharge-order-tip {
-  margin-top: 12px;
-  border-radius: 8px;
-  background: hsl(var(--primary) / 7%);
   padding: 12px;
+  margin-top: 12px;
+  background: hsl(var(--primary) / 7%);
+  border-radius: 8px;
 }
 
 .recharge-actions {
   display: flex;
-  justify-content: flex-end;
   gap: 8px;
+  justify-content: flex-end;
 }
 
 :global(.dark) .user-asset-label {
@@ -3500,9 +3654,9 @@ watch(
 }
 
 :global(.dark) .recharge-gift-tip {
-  border-color: rgb(244 63 94 / 35%);
-  background: rgb(76 5 25 / 45%);
   color: rgb(253 164 175);
+  background: rgb(76 5 25 / 45%);
+  border-color: rgb(244 63 94 / 35%);
 }
 
 :global(.dark) .recharge-gift-tip strong,
@@ -3553,13 +3707,13 @@ watch(
 
 @media (max-width: 768px) {
   .package-detail-section__head {
-    align-items: flex-start;
     flex-direction: column;
+    align-items: flex-start;
   }
 
   .admin-panel__head {
-    align-items: flex-start;
     flex-direction: column;
+    align-items: flex-start;
   }
 }
 
@@ -3648,5 +3802,4 @@ watch(
     grid-template-columns: 1fr;
   }
 }
-
 </style>

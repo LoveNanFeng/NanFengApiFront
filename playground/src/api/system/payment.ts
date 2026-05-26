@@ -6,7 +6,7 @@ export namespace PaymentConfigApi {
   export interface AlipayConfig {
     alipayPublicKey: string;
     appId: string;
-    charsetName: 'UTF-8';
+    charsetName: string;
     enabled: 0 | 1;
     facePayEnabled: 0 | 1;
     formatType: 'JSON';
@@ -15,10 +15,26 @@ export namespace PaymentConfigApi {
     notifyUrl: string;
     remark?: string;
     returnUrl?: string;
-    signType: 'RSA' | 'RSA2';
+    signType: 'RSA2' | 'RSA';
     updateTime?: null | string;
     wapPayEnabled: 0 | 1;
     websitePayEnabled: 0 | 1;
+  }
+
+  export interface WechatConfig {
+    apiV3Key: string;
+    appId: string;
+    enabled: 0 | 1;
+    gatewayUrl: string;
+    mchId: string;
+    merchantPrivateKey: string;
+    merchantSerialNo: string;
+    nativePayEnabled: 0 | 1;
+    notifyUrl: string;
+    remark?: string;
+    updateTime?: null | string;
+    wechatpayPublicKey?: string;
+    wechatpayPublicKeyId?: string;
   }
 }
 
@@ -29,7 +45,7 @@ export namespace PaymentOrderApi {
     | 'INTERFACE_PACKAGE'
     | 'POINT_PACKAGE'
     | 'RECHARGE';
-  export type PayChannel = 'ALIPAY' | 'BALANCE';
+  export type PayChannel = 'ALIPAY' | 'BALANCE' | 'WECHAT';
 
   export interface OrderListParams extends Recordable<any> {
     keyword?: string;
@@ -108,6 +124,20 @@ async function validateAlipayConfig(data: PaymentConfigApi.AlipayConfig) {
   return requestClient.post('/system/payment/alipay-config/validate', data);
 }
 
+async function getWechatConfig() {
+  return requestClient.get<PaymentConfigApi.WechatConfig>(
+    '/system/payment/wechat-config',
+  );
+}
+
+async function updateWechatConfig(data: PaymentConfigApi.WechatConfig) {
+  return requestClient.put('/system/payment/wechat-config', data);
+}
+
+async function validateWechatConfig(data: PaymentConfigApi.WechatConfig) {
+  return requestClient.post('/system/payment/wechat-config/validate', data);
+}
+
 async function getPaymentOrderList(params: PaymentOrderApi.OrderListParams) {
   return requestClient.get<{
     items: PaymentOrderApi.PaymentOrder[];
@@ -115,9 +145,7 @@ async function getPaymentOrderList(params: PaymentOrderApi.OrderListParams) {
   }>('/system/payment/orders/list', { params });
 }
 
-async function getRechargeAmountList(
-  params: RechargeAmountApi.ListParams,
-) {
+async function getRechargeAmountList(params: RechargeAmountApi.ListParams) {
   return requestClient.get<{
     items: RechargeAmountApi.RechargeAmount[];
     total: number;
@@ -153,8 +181,11 @@ export {
   getAlipayConfig,
   getPaymentOrderList,
   getRechargeAmountList,
+  getWechatConfig,
   updateAlipayConfig,
   updateRechargeAmount,
   updateRechargeAmountStatus,
+  updateWechatConfig,
   validateAlipayConfig,
+  validateWechatConfig,
 };

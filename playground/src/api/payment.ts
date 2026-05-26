@@ -4,8 +4,8 @@ import { requestClient } from '#/api/request';
 
 export namespace RechargeApi {
   export type ClientType = 'AUTO' | 'DESKTOP' | 'MOBILE';
-  export type PayProduct = 'AUTO' | 'FACE' | 'PAGE' | 'WAP';
-  export type PayChannel = 'ALIPAY' | 'BALANCE';
+  export type PayProduct = 'AUTO' | 'FACE' | 'NATIVE' | 'PAGE' | 'WAP';
+  export type PayChannel = 'ALIPAY' | 'BALANCE' | 'WECHAT';
   export type RechargeStatus = 'CLOSED' | 'FAILED' | 'PAID' | 'PENDING';
 
   export interface RechargeAmountOption {
@@ -17,18 +17,23 @@ export namespace RechargeApi {
   }
 
   export interface Capabilities {
+    alipayEnabled?: boolean;
     amountOptions?: RechargeAmountOption[];
+    defaultPayChannel?: Exclude<PayChannel, 'BALANCE'>;
     desktopDefault: Exclude<PayProduct, 'AUTO'>;
     enabled: boolean;
     facePayEnabled: boolean;
     mobileDefault: Exclude<PayProduct, 'AUTO'>;
     wapPayEnabled: boolean;
     websitePayEnabled: boolean;
+    wechatEnabled?: boolean;
+    wechatNativePayEnabled?: boolean;
   }
 
   export interface CreateOrderPayload {
     amount: number | string;
     clientType: ClientType;
+    payChannel?: Exclude<PayChannel, 'BALANCE'>;
     preferredProduct?: PayProduct;
   }
 
@@ -44,9 +49,10 @@ export namespace RechargeApi {
     giftAmount?: number | string;
     orderNo: string;
     paidTime?: string;
+    payChannel: Exclude<PayChannel, 'BALANCE'>;
+    paymentUrl?: null | string;
     payProduct: Exclude<PayProduct, 'AUTO'>;
     payProductName?: string;
-    paymentUrl?: null | string;
     qrCode?: null | string;
     status: RechargeStatus;
     tradeNo?: string;
@@ -71,9 +77,9 @@ export namespace RechargeApi {
     orderNo: string;
     paidTime?: string;
     payChannel: PayChannel;
-    payProduct: Exclude<PayProduct, 'AUTO'> | 'BALANCE';
-    payProductName?: string;
     paymentUrl?: null | string;
+    payProduct: 'BALANCE' | Exclude<PayProduct, 'AUTO'>;
+    payProductName?: string;
     qrCode?: null | string;
     status: RechargeStatus;
     tradeNo?: string;

@@ -26,6 +26,7 @@ export const statusOptions = [
 
 export const payChannelOptions = [
   { label: '支付宝', value: 'ALIPAY' },
+  { label: '微信支付', value: 'WECHAT' },
   { label: '余额支付', value: 'BALANCE' },
 ];
 
@@ -46,6 +47,7 @@ export const statusColor: Record<PaymentOrderApi.OrderStatus, string> = {
 export const payChannelColor: Record<PaymentOrderApi.PayChannel, string> = {
   ALIPAY: 'processing',
   BALANCE: 'gold',
+  WECHAT: 'success',
 };
 
 export function orderTypeLabel(value?: string) {
@@ -57,7 +59,11 @@ export function statusLabel(value?: string) {
 }
 
 export function payChannelLabel(value?: string) {
-  return payChannelOptions.find((item) => item.value === value)?.label || value || '-';
+  return (
+    payChannelOptions.find((item) => item.value === value)?.label ||
+    value ||
+    '-'
+  );
 }
 
 function formatOrderMoney(value?: number | string) {
