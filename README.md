@@ -2,6 +2,10 @@
 
 > **重要：本前端已适配 NanFengAPI 后端。**
 >
+> 主仓库地址：[LoveNanFeng/NanFengAPI](https://github.com/LoveNanFeng/NanFengAPI)
+>
+> 前端仓库地址：[LoveNanFeng/NanFengApiFront](https://github.com/LoveNanFeng/NanFengApiFront)
+>
 > 后端仓库地址：[LoveNanFeng/NanFengApiBack](https://github.com/LoveNanFeng/NanFengApiBack)
 >
 > 本地开发默认后端地址：`http://localhost:8080/api`
@@ -12,12 +16,20 @@
 
 ## 项目关系
 
-- 前端目录：`vben-admin`
-- 前端业务应用：`vben-admin/playground`
-- 后端仓库：[LoveNanFeng/NanFengApiBack](https://github.com/LoveNanFeng/NanFengApiBack)
-- 后端本地端口：`8080`
-- 后端接口前缀：`/api`
-- 前端本地端口：`5555`
+| 项目 | 仓库地址 | 说明 |
+| --- | --- | --- |
+| 主仓库 | [LoveNanFeng/NanFengAPI](https://github.com/LoveNanFeng/NanFengAPI) | NanFengAPI 项目总仓库，汇总前端、后端和项目说明 |
+| 前端仓库 | [LoveNanFeng/NanFengApiFront](https://github.com/LoveNanFeng/NanFengApiFront) | 当前前端项目，主业务应用在 `vben-admin/playground` |
+| 后端仓库 | [LoveNanFeng/NanFengApiBack](https://github.com/LoveNanFeng/NanFengApiBack) | NanFengAPI 后端服务，默认接口前缀为 `/api` |
+
+| 配置项       | 默认值                      |
+| ------------ | --------------------------- |
+| 前端目录     | `vben-admin`                |
+| 前端业务应用 | `vben-admin/playground`     |
+| 前端本地端口 | `5555`                      |
+| 后端本地端口 | `8080`                      |
+| 后端接口前缀 | `/api`                      |
+| 本地后端地址 | `http://localhost:8080/api` |
 
 开发环境中，前端通过 `playground/vite.config.ts` 代理请求：
 
