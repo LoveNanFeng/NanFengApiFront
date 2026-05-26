@@ -1,12 +1,20 @@
 <script lang="ts" setup>
 import type { EchartsUIType } from '@vben/plugins/echarts';
+
 import type { HomeApi } from '#/api/home';
 
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from 'vue';
 import { RouterLink } from 'vue-router';
 
 import { IconifyIcon } from '@vben/icons';
-import { EchartsUI, echarts, useEcharts } from '@vben/plugins/echarts';
+import { echarts, EchartsUI, useEcharts } from '@vben/plugins/echarts';
 import { useAccessStore, useUserStore } from '@vben/stores';
 
 import { getHomeOverview } from '#/api/home';
@@ -34,6 +42,43 @@ interface ApiDisplayCard extends HomeApi.HotApiItem {
   tags: string[];
 }
 
+interface ChinaFeature {
+  properties?: {
+    adcode?: number | string;
+    center?: [number, number];
+    name?: string;
+  };
+}
+
+interface ChinaProvinceFeature {
+  properties: {
+    adcode?: number | string;
+    center: [number, number];
+    name: string;
+  };
+}
+
+interface ChinaProvinceFeatureWithCode extends ChinaProvinceFeature {
+  properties: ChinaProvinceFeature['properties'] & {
+    adcode: number | string;
+  };
+}
+
+const defaultSiteConfig: HomeApi.SiteConfig = {
+  contactAddress: '',
+  contactEmail: '',
+  contactPhone: '',
+  contactQq: '',
+  contactWechat: '',
+  copyright: '© 2026 NanFengAPI. All rights reserved.',
+  description: '统一管理接口、Key、套餐、计费与调用日志。',
+  icp: '',
+  logoUrl: '',
+  siteName: 'NanFengAPI',
+  slogan: '稳定、清晰、可运营的 API 服务平台',
+  updateTime: null,
+};
+
 const emptyOverview: HomeApi.Overview = {
   callTrend7d: [],
   homeNotice: {
@@ -44,20 +89,7 @@ const emptyOverview: HomeApi.Overview = {
   },
   hotApis: [],
   regionRanking: [],
-  siteConfig: {
-    contactAddress: '',
-    contactEmail: '',
-    contactPhone: '',
-    contactQq: '',
-    contactWechat: '',
-    copyright: '© 2026 NanFengAPI. All rights reserved.',
-    description: '统一管理接口、Key、套餐、计费与调用日志。',
-    icp: '',
-    logoUrl: '',
-    siteName: 'NanFengAPI',
-    slogan: '稳定、清晰、可运营的 API 服务平台',
-    updateTime: null,
-  },
+  siteConfig: defaultSiteConfig,
   stats: {
     activeRegions24h: 0,
     activeRegions24hDelta: 0,
@@ -79,32 +111,44 @@ const API_MARKET_PATH = '/apilist';
 const CONSOLE_FALLBACK_PATH = '/workspace';
 const REGISTER_PATH = '/auth/register';
 
-const chinaFeatures = (chinaGeoJson as any).features as Array<{
-  properties?: {
-    adcode?: number | string;
-    center?: [number, number];
-    name?: string;
-  };
-}>;
-const chinaProvinceFeatures = chinaFeatures.filter(
-  (item) => item.properties?.name && item.properties?.adcode !== '100000_JD',
-);
+const chinaFeatures = (chinaGeoJson as { features: ChinaFeature[] }).features;
+const chinaProvinceFeatures = chinaFeatures.filter(isChinaProvinceFeature);
 const provinceCenterByName = new Map(
-  chinaProvinceFeatures
-    .filter((item) => item.properties?.name && item.properties.center)
-    .map((item) => [item.properties!.name!, item.properties!.center!]),
+  chinaProvinceFeatures.map((item) => [
+    item.properties.name,
+    item.properties.center,
+  ]),
 );
 const provinceFeatureByCode = new Map(
-  chinaProvinceFeatures
-    .filter((item) => item.properties?.adcode && item.properties?.name && item.properties.center)
-    .map((item) => [
-      String(item.properties!.adcode),
-      {
-        center: item.properties!.center!,
-        name: item.properties!.name!,
-      },
-    ]),
+  chinaProvinceFeatures.filter(hasProvinceCode).map((item) => [
+    String(item.properties.adcode),
+    {
+      center: item.properties.center,
+      name: item.properties.name,
+    },
+  ]),
 );
+
+function isChinaProvinceFeature(
+  item: ChinaFeature,
+): item is ChinaProvinceFeature {
+  const properties = item.properties;
+  return Boolean(
+    properties?.name &&
+    properties.center &&
+    String(properties.adcode || '') !== '100000_JD',
+  );
+}
+
+function hasProvinceCode(
+  item: ChinaProvinceFeature,
+): item is ChinaProvinceFeatureWithCode {
+  return (
+    item.properties.adcode !== undefined &&
+    item.properties.adcode !== null &&
+    String(item.properties.adcode).trim() !== ''
+  );
+}
 
 echarts.registerMap(CHINA_MAP_NAME, chinaGeoJson as any);
 
@@ -192,11 +236,11 @@ const homeNotice = computed(
     },
 );
 const siteConfig = computed<HomeApi.SiteConfig>(
-  () => overview.value.siteConfig ?? emptyOverview.siteConfig!,
+  () => overview.value.siteConfig ?? defaultSiteConfig,
 );
-const stats = computed(() => overview.value.stats ?? emptyOverview.stats);
 const siteName = computed(
-  () => String(siteConfig.value.siteName || 'NanFengAPI').trim() || 'NanFengAPI',
+  () =>
+    String(siteConfig.value.siteName || 'NanFengAPI').trim() || 'NanFengAPI',
 );
 const gatewayPoint = computed(() => {
   const province = resolveGatewayProvince();
@@ -210,7 +254,9 @@ const gatewayPoint = computed(() => {
 });
 const isSignedIn = computed(() => Boolean(accessStore.accessToken));
 const consolePath = computed(() => {
-  const homePath = String(userStore.userInfo?.homePath || CONSOLE_FALLBACK_PATH).trim();
+  const homePath = String(
+    userStore.userInfo?.homePath || CONSOLE_FALLBACK_PATH,
+  ).trim();
   return homePath || CONSOLE_FALLBACK_PATH;
 });
 const registerPath = REGISTER_PATH;
@@ -240,9 +286,6 @@ const trendItems = computed(() => {
     };
   });
 });
-const trendTotal = computed(() =>
-  trendItems.value.reduce((sum, item) => sum + Number(item.value || 0), 0),
-);
 const noticeText = computed(() => {
   if (Number(homeNotice.value.enabled || 0) !== 1) {
     return '';
@@ -442,20 +485,26 @@ function updateTrendPanelSink() {
   const currentSink = trendPanelSink.value;
   const panelRect = panel.getBoundingClientRect();
   const hotStripRect = hotStrip.getBoundingClientRect();
-  const panelOriginalBottom = panelRect.top + window.scrollY - currentSink + panelRect.height;
-  const hotStripBottom = hotStripRect.top + window.scrollY + hotStripRect.height;
-  const maxSink = Math.max(0, Math.min(180, hotStripBottom - panelOriginalBottom));
+  const panelOriginalBottom =
+    panelRect.top + window.scrollY - currentSink + panelRect.height;
+  const hotStripBottom =
+    hotStripRect.top + window.scrollY + hotStripRect.height;
+  const maxSink = Math.max(
+    0,
+    Math.min(180, hotStripBottom - panelOriginalBottom),
+  );
   trendPanelSink.value = Math.min(maxSink, Math.max(0, window.scrollY * 0.32));
 }
 
 function apiTags(item: HomeApi.HotApiItem) {
-  const tags: string[] = [];
-  if (item.requestMethod) {
-    tags.push(String(item.requestMethod).replace('_', '/'));
-  }
-  tags.push(`${formatNumber(item.callCount)} 次调用`);
-  tags.push(formatApiPrice(item));
-  return tags.slice(0, 3);
+  const methodTag = item.requestMethod
+    ? String(item.requestMethod).replace('_', '/')
+    : '';
+  const baseTags = [
+    `${formatNumber(item.callCount)} 次调用`,
+    formatApiPrice(item),
+  ];
+  return methodTag ? [methodTag, ...baseTags] : baseTags;
 }
 
 function formatApiPrice(item: HomeApi.HotApiItem) {
@@ -619,25 +668,31 @@ async function renderRegionMap() {
   const theme = activeTheme.value;
   const maxValue = Math.max(1, knownRegionMax.value);
   const heatColors = theme.mapColors;
-  const geoRegions = Array.from(regionByMapName.value.entries()).map(([name, region]) => {
-    const ratio = Math.min(1, Number(region.value || 0) / maxValue);
-    const colorIndex = Math.min(heatColors.length - 1, Math.floor(ratio * heatColors.length));
-    return {
-      emphasis: {
-        itemStyle: {
-          areaColor: theme.mapColors[theme.mapColors.length - 1] ?? theme.color,
-          borderColor: theme.color,
-          shadowBlur: 14,
-          shadowColor: `rgb(${theme.rgb} / 22%)`,
+  const geoRegions = [...regionByMapName.value.entries()].map(
+    ([name, region]) => {
+      const ratio = Math.min(1, Number(region.value || 0) / maxValue);
+      const colorIndex = Math.min(
+        heatColors.length - 1,
+        Math.floor(ratio * heatColors.length),
+      );
+      return {
+        emphasis: {
+          itemStyle: {
+            areaColor:
+              theme.mapColors[theme.mapColors.length - 1] ?? theme.color,
+            borderColor: theme.color,
+            shadowBlur: 14,
+            shadowColor: `rgb(${theme.rgb} / 22%)`,
+          },
         },
-      },
-      itemStyle: {
-        areaColor: heatColors[colorIndex],
-        borderColor: `rgb(${theme.rgb} / 22%)`,
-      },
-      name,
-    };
-  });
+        itemStyle: {
+          areaColor: heatColors[colorIndex],
+          borderColor: `rgb(${theme.rgb} / 22%)`,
+        },
+        name,
+      };
+    },
+  );
   const mapTooltipFormatter = (params: any) => {
     const mapName = normalizeMapRegionName(params?.name);
     const region = regionByMapName.value.get(mapName);
@@ -842,11 +897,15 @@ function normalizeMapRegionName(name: string | undefined) {
 }
 
 function resolveGatewayProvince() {
-  const byCode = provinceFeatureByCode.get(String(overview.value.gatewayProvinceCode || '').trim());
+  const byCode = provinceFeatureByCode.get(
+    String(overview.value.gatewayProvinceCode || '').trim(),
+  );
   if (byCode) {
     return byCode;
   }
-  const provinceName = normalizeMapRegionName(overview.value.gatewayProvinceName);
+  const provinceName = normalizeMapRegionName(
+    overview.value.gatewayProvinceName,
+  );
   const center = provinceCenterByName.get(provinceName);
   if (!provinceName || !center) {
     return null;
@@ -911,7 +970,6 @@ function compactNumber(value: number | string | undefined) {
   }
   return String(number);
 }
-
 </script>
 
 <template>
@@ -942,7 +1000,8 @@ function compactNumber(value: number | string | undefined) {
         </h1>
 
         <p>
-          {{ siteName }} 提供统一的 API 列表、详情调试、Key 管理、套餐购买、调用记录与计费入口，
+          {{ siteName }} 提供统一的 API 列表、详情调试、Key
+          管理、套餐购买、调用记录与计费入口，
           让接口接入更快、管理更稳、对账更清楚。
         </p>
 
@@ -950,7 +1009,9 @@ function compactNumber(value: number | string | undefined) {
           <RouterLink class="primary-button" :to="primaryActionPath">
             {{ primaryActionLabel }}
           </RouterLink>
-          <RouterLink class="secondary-button" :to="apiMarketPath">查看接口市场</RouterLink>
+          <RouterLink class="secondary-button" :to="apiMarketPath">
+            查看接口市场
+          </RouterLink>
         </div>
 
         <section ref="hotStripRef" class="hot-strip">
@@ -986,7 +1047,6 @@ function compactNumber(value: number | string | undefined) {
             <span>实时</span>
           </div>
 
-
           <EchartsUI
             ref="callTrendRef"
             class="trend-chart"
@@ -994,7 +1054,6 @@ function compactNumber(value: number | string | undefined) {
             width="100%"
           />
         </section>
-
       </aside>
     </section>
 
@@ -1008,7 +1067,11 @@ function compactNumber(value: number | string | undefined) {
       <div v-if="realApiCards.length > 0" class="api-grid">
         <article v-for="item in realApiCards" :key="item.id" class="api-card">
           <span class="api-icon">
-            <img v-if="item.avatarUrl" :alt="String(item.name)" :src="item.avatarUrl" />
+            <img
+              v-if="item.avatarUrl"
+              :alt="String(item.name)"
+              :src="item.avatarUrl"
+            />
             <IconifyIcon v-else :icon="item.icon" />
           </span>
           <div>
@@ -1018,7 +1081,9 @@ function compactNumber(value: number | string | undefined) {
           <div class="api-tags">
             <span v-for="tag in item.tags" :key="tag">{{ tag }}</span>
           </div>
-          <RouterLink :to="{ path: apiMarketPath, query: { keyword: item.name } }">
+          <RouterLink
+            :to="{ path: apiMarketPath, query: { keyword: item.name } }"
+          >
             查看详情
             <IconifyIcon icon="lucide:arrow-right" />
           </RouterLink>
@@ -1066,7 +1131,11 @@ function compactNumber(value: number | string | undefined) {
       </div>
 
       <div class="feature-grid">
-        <article v-for="item in featureCards" :key="item.title" class="feature-card">
+        <article
+          v-for="item in featureCards"
+          :key="item.title"
+          class="feature-card"
+        >
           <span>
             <IconifyIcon :icon="item.icon" />
           </span>
@@ -1085,7 +1154,9 @@ function compactNumber(value: number | string | undefined) {
       <div class="section-head">
         <span>SCENARIOS</span>
         <h2>适用场景</h2>
-        <p>同一套接口、Key、套餐、调用记录与计费能力，覆盖不同角色的使用方式。</p>
+        <p>
+          同一套接口、Key、套餐、调用记录与计费能力，覆盖不同角色的使用方式。
+        </p>
       </div>
 
       <div class="scenario-grid">
@@ -1104,7 +1175,9 @@ function compactNumber(value: number | string | undefined) {
         <h2>准备好了就开始</h2>
         <p>从接口市场选择接口，进入详情调试，创建 Key 后复制示例接入。</p>
       </div>
-      <RouterLink :to="primaryActionPath">{{ quickStartActionLabel }}</RouterLink>
+      <RouterLink :to="primaryActionPath">
+        {{ quickStartActionLabel }}
+      </RouterLink>
     </section>
 
     <PublicSiteFooter :site-config="siteConfig" />
@@ -1120,8 +1193,11 @@ function compactNumber(value: number | string | undefined) {
 
   position: relative;
   min-height: 100vh;
-  overflow-x: hidden;
   padding-top: 72px;
+  overflow-x: hidden;
+  font-family:
+    'HarmonyOS Sans SC', MiSans, 'Microsoft YaHei UI', 'PingFang SC', sans-serif;
+  color: #0f172a;
   background:
     linear-gradient(
       180deg,
@@ -1136,17 +1212,14 @@ function compactNumber(value: number | string | undefined) {
       transparent 1px,
       transparent 80px
     );
-  color: #0f172a;
-  font-family:
-    'HarmonyOS Sans SC', 'MiSans', 'Microsoft YaHei UI', 'PingFang SC',
-    sans-serif;
 }
 
 .home-page::before {
   position: fixed;
-  z-index: 0;
   inset: 72px 0 0;
+  z-index: 0;
   pointer-events: none;
+  content: '';
   background:
     repeating-linear-gradient(
       90deg,
@@ -1162,25 +1235,30 @@ function compactNumber(value: number | string | undefined) {
       rgb(var(--home-primary-rgb) / 3.6%) 72px,
       rgb(var(--home-primary-rgb) / 3.6%) 73px
     );
-  content: '';
-  mask-image: linear-gradient(180deg, transparent 0%, #000 18%, #000 70%, transparent 100%);
+  mask-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    #000 18%,
+    #000 70%,
+    transparent 100%
+  );
   animation: grid-drift 26s linear infinite;
 }
 
 .site-header {
   position: fixed;
-  z-index: 50;
   top: 0;
   right: 0;
   left: 0;
+  z-index: 50;
   display: grid;
-  height: 72px;
   grid-template-columns: 260px 1fr auto;
-  align-items: center;
   gap: 28px;
-  border-bottom: 1px solid #e2e8f0;
-  background: rgb(255 255 255 / 92%);
+  align-items: center;
+  height: 72px;
   padding: 0 clamp(24px, 4vw, 64px);
+  background: rgb(255 255 255 / 92%);
+  border-bottom: 1px solid #e2e8f0;
   backdrop-filter: blur(18px);
 }
 
@@ -1193,23 +1271,23 @@ function compactNumber(value: number | string | undefined) {
 
 .notice-bar {
   display: flex;
-  height: 34px;
-  align-items: center;
   gap: 10px;
+  align-items: center;
+  height: 34px;
+  padding: 0 16px;
   overflow: hidden;
+  color: #475569;
+  background: rgb(255 255 255 / 70%);
   border: 1px solid rgb(var(--home-primary-rgb) / 14%);
   border-radius: 999px;
-  background: rgb(255 255 255 / 70%);
-  color: #475569;
-  padding: 0 16px;
   box-shadow: 0 12px 28px rgb(15 23 42 / 4%);
   animation: fade-up 0.48s ease 0.08s both;
 }
 
 .notice-bar svg {
   flex: 0 0 auto;
-  color: var(--home-primary);
   font-size: 16px;
+  color: var(--home-primary);
   animation: notice-icon-pulse 2.8s ease-in-out infinite;
 }
 
@@ -1229,9 +1307,9 @@ function compactNumber(value: number | string | undefined) {
 }
 
 .notice-track span {
-  color: #475569;
   font-size: 13px;
   font-weight: 750;
+  color: #475569;
 }
 
 @keyframes notice-scroll {
@@ -1257,20 +1335,20 @@ function compactNumber(value: number | string | undefined) {
 }
 
 .brand {
-  min-width: 0;
   gap: 12px;
-  color: #0f172a;
+  min-width: 0;
   font-size: 22px;
   font-weight: 900;
+  color: #0f172a;
   text-decoration: none;
 }
 
 .brand-logo {
+  flex: 0 0 auto;
   width: 56px;
   height: 48px;
-  flex: 0 0 auto;
-  border-radius: 10px;
   object-fit: contain;
+  border-radius: 10px;
 }
 
 .brand > span:last-child {
@@ -1290,38 +1368,46 @@ function compactNumber(value: number | string | undefined) {
 .brand-mark::before {
   position: absolute;
   inset: 0;
-  border-radius: 12px;
+  content: '';
   background: linear-gradient(
     145deg,
     #22d3ee 0%,
     var(--home-primary) 58%,
     var(--home-accent) 100%
   );
-  clip-path: polygon(46% 3%, 60% 3%, 100% 96%, 75% 96%, 51% 43%, 26% 96%, 0 96%);
-  content: '';
+  border-radius: 12px;
+  clip-path: polygon(
+    46% 3%,
+    60% 3%,
+    100% 96%,
+    75% 96%,
+    51% 43%,
+    26% 96%,
+    0 96%
+  );
 }
 
 .brand-mark::after {
   position: absolute;
-  left: 17px;
   bottom: 5px;
+  left: 17px;
   width: 11px;
   height: 12px;
+  content: '';
   background: rgb(255 255 255 / 88%);
   clip-path: polygon(50% 0, 100% 100%, 0 100%);
-  content: '';
 }
 
 .site-nav {
-  justify-content: center;
   gap: clamp(18px, 3vw, 42px);
+  justify-content: center;
 }
 
 .site-nav a {
   position: relative;
-  color: #334155;
   font-size: 15px;
   font-weight: 800;
+  color: #334155;
   text-decoration: none;
 }
 
@@ -1337,37 +1423,37 @@ function compactNumber(value: number | string | undefined) {
   bottom: -25px;
   left: 0;
   height: 3px;
-  border-radius: 999px;
-  background: var(--home-primary);
   content: '';
+  background: var(--home-primary);
+  border-radius: 999px;
 }
 
 .site-actions {
-  align-items: center;
   gap: 12px;
+  align-items: center;
 }
 
 .theme-switcher {
   display: inline-flex;
-  align-items: center;
   gap: 8px;
-  border-radius: 999px;
-  background: rgb(15 23 42 / 4%);
+  align-items: center;
   padding: 7px 9px;
+  background: rgb(15 23 42 / 4%);
+  border-radius: 999px;
 }
 
 .theme-switcher button {
   display: grid;
+  place-items: center;
   width: 22px;
   height: 22px;
+  padding: 0;
+  font-size: 13px;
+  color: #fff;
   cursor: pointer;
-  place-items: center;
+  background: var(--theme-color);
   border: 0;
   border-radius: 50%;
-  background: var(--theme-color);
-  color: #fff;
-  font-size: 13px;
-  padding: 0;
 }
 
 .theme-switcher button.active {
@@ -1385,10 +1471,10 @@ function compactNumber(value: number | string | undefined) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
   font-size: 14px;
   font-weight: 850;
   text-decoration: none;
+  border-radius: 8px;
 }
 
 .login-link,
@@ -1398,17 +1484,17 @@ function compactNumber(value: number | string | undefined) {
 }
 
 .login-link {
-  border: 1px solid #cbd5e1;
-  background: #fff;
   color: #0f172a;
+  background: #fff;
+  border: 1px solid #cbd5e1;
 }
 
 .register-link,
 .primary-button,
 .quickstart-section a {
-  border: 1px solid var(--home-primary);
-  background: var(--home-primary);
   color: #fff;
+  background: var(--home-primary);
+  border: 1px solid var(--home-primary);
   box-shadow: 0 14px 28px rgb(var(--home-primary-rgb) / 18%);
 }
 
@@ -1431,40 +1517,40 @@ function compactNumber(value: number | string | undefined) {
 
 .hero-copy {
   display: flex;
-  min-width: 0;
   flex-direction: column;
   justify-content: flex-start;
+  min-width: 0;
 }
 
 .eyebrow {
   display: inline-flex;
-  width: fit-content;
-  align-items: center;
   gap: 9px;
-  border: 1px solid rgb(var(--home-primary-rgb) / 16%);
-  border-radius: 999px;
-  background: rgb(255 255 255 / 74%);
-  color: #475569;
+  align-items: center;
+  width: fit-content;
+  padding: 8px 14px;
   font-size: 13px;
   font-weight: 800;
-  padding: 8px 14px;
+  color: #475569;
+  background: rgb(255 255 255 / 74%);
+  border: 1px solid rgb(var(--home-primary-rgb) / 16%);
+  border-radius: 999px;
   animation: fade-up 0.58s ease 0.12s both;
 }
 
 .eyebrow span {
   width: 8px;
   height: 8px;
-  border-radius: 50%;
   background: #22c55e;
+  border-radius: 50%;
 }
 
 .hero-copy h1 {
   max-width: 720px;
   margin: 30px 0 18px;
-  color: #0f172a;
   font-size: clamp(42px, 4.1vw, 62px);
   font-weight: 950;
   line-height: 1.13;
+  color: #0f172a;
   animation: fade-up 0.64s ease 0.2s both;
 }
 
@@ -1476,10 +1562,10 @@ function compactNumber(value: number | string | undefined) {
 .hero-copy p {
   max-width: 650px;
   margin: 0;
-  color: #475569;
   font-size: 16px;
   font-weight: 650;
   line-height: 1.8;
+  color: #475569;
   animation: fade-up 0.64s ease 0.28s both;
 }
 
@@ -1504,14 +1590,14 @@ function compactNumber(value: number | string | undefined) {
 .login-link:hover,
 .register-link:hover,
 .quickstart-section a:hover {
-  transform: translateY(-2px);
   box-shadow: 0 16px 30px rgb(var(--home-primary-rgb) / 16%);
+  transform: translateY(-2px);
 }
 
 .secondary-button {
-  border: 1px solid #cbd5e1;
-  background: #fff;
   color: #0f172a;
+  background: #fff;
+  border: 1px solid #cbd5e1;
 }
 
 .card-head p,
@@ -1523,11 +1609,11 @@ function compactNumber(value: number | string | undefined) {
 
 .hot-strip {
   max-width: 760px;
+  padding: 16px;
   margin-top: 18px;
+  background: rgb(255 255 255 / 82%);
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  background: rgb(255 255 255 / 82%);
-  padding: 16px;
   animation: fade-up 0.64s ease 0.44s both;
 }
 
@@ -1542,9 +1628,9 @@ function compactNumber(value: number | string | undefined) {
 }
 
 .strip-head a {
-  color: #0f172a;
   font-size: 13px;
   font-weight: 850;
+  color: #0f172a;
   text-decoration: none;
 }
 
@@ -1559,13 +1645,13 @@ function compactNumber(value: number | string | undefined) {
 .hot-tags a,
 .api-tags span,
 .feature-card em {
-  border-radius: 7px;
-  background: #f1f5f9;
-  color: #334155;
+  padding: 7px 10px;
   font-size: 12px;
   font-weight: 800;
+  color: #334155;
   text-decoration: none;
-  padding: 7px 10px;
+  background: #f1f5f9;
+  border-radius: 7px;
   transition:
     background 0.2s ease,
     color 0.2s ease,
@@ -1573,29 +1659,29 @@ function compactNumber(value: number | string | undefined) {
 }
 
 .hot-tags a:hover {
-  background: var(--home-soft);
   color: var(--home-primary);
+  background: var(--home-soft);
   transform: translateY(-2px);
 }
 
 .hot-tags small {
   margin-left: 5px;
-  color: var(--home-primary);
   font-weight: 900;
+  color: var(--home-primary);
 }
 
 .hot-strip p {
   margin: 0;
-  color: #64748b;
   font-size: 13px;
   font-weight: 750;
+  color: #64748b;
 }
 
 .hero-panel {
   display: grid;
-  align-content: start;
   gap: 16px;
-  transform: translateY(var(--trend-sink, 0px));
+  align-content: start;
+  transform: translateY(var(--trend-sink, 0));
   will-change: transform;
 }
 
@@ -1606,9 +1692,9 @@ function compactNumber(value: number | string | undefined) {
 .empty-card {
   position: relative;
   overflow: hidden;
+  background: rgb(255 255 255 / 88%);
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  background: rgb(255 255 255 / 88%);
   box-shadow: 0 18px 50px rgb(15 23 42 / 7%);
   transition:
     transform 0.24s ease,
@@ -1621,6 +1707,7 @@ function compactNumber(value: number | string | undefined) {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  content: '';
   background: linear-gradient(
     110deg,
     transparent 0%,
@@ -1629,7 +1716,6 @@ function compactNumber(value: number | string | undefined) {
     transparent 62%,
     transparent 100%
   );
-  content: '';
   transform: translateX(-110%);
   animation: card-sheen 7s ease-in-out infinite;
 }
@@ -1649,16 +1735,16 @@ function compactNumber(value: number | string | undefined) {
 }
 
 .card-head {
-  justify-content: space-between;
   gap: 18px;
+  justify-content: space-between;
 }
 
 .card-head h2,
 .section-head h2,
 .quickstart-section h2 {
   margin: 0;
-  color: #0f172a;
   font-weight: 950;
+  color: #0f172a;
 }
 
 .card-head h2 {
@@ -1674,12 +1760,12 @@ function compactNumber(value: number | string | undefined) {
 }
 
 .card-head > span {
-  border-radius: 7px;
-  background: var(--home-soft);
-  color: var(--home-primary);
+  padding: 7px 10px;
   font-size: 12px;
   font-weight: 900;
-  padding: 7px 10px;
+  color: var(--home-primary);
+  background: var(--home-soft);
+  border-radius: 7px;
 }
 
 .trend-chart {
@@ -1699,9 +1785,9 @@ function compactNumber(value: number | string | undefined) {
 .section-head span,
 .quickstart-section span {
   display: block;
-  color: var(--home-primary);
   font-size: 12px;
   font-weight: 950;
+  color: var(--home-primary);
   letter-spacing: 0.08em;
 }
 
@@ -1721,7 +1807,8 @@ function compactNumber(value: number | string | undefined) {
   display: grid;
   grid-template-columns: 56px minmax(0, 1fr);
   gap: 16px;
-  min-height: 210px;
+  align-content: start;
+  height: 240px;
   padding: 20px;
   animation: fade-up 0.58s ease both;
 }
@@ -1746,13 +1833,13 @@ function compactNumber(value: number | string | undefined) {
 
 .api-icon {
   display: grid;
+  place-items: center;
   width: 52px;
   height: 52px;
-  place-items: center;
-  border-radius: 12px;
-  background: var(--home-soft);
-  color: var(--home-primary);
   font-size: 28px;
+  color: var(--home-primary);
+  background: var(--home-soft);
+  border-radius: 12px;
   transition: transform 0.24s ease;
 }
 
@@ -1764,27 +1851,46 @@ function compactNumber(value: number | string | undefined) {
 .api-icon img {
   width: 100%;
   height: 100%;
-  border-radius: 12px;
   object-fit: cover;
+  border-radius: 12px;
 }
 
 .api-card h3,
 .feature-card h3,
 .scenario-grid h3 {
   margin: 0;
-  color: #0f172a;
   font-size: 18px;
   font-weight: 950;
+  color: #0f172a;
+}
+
+.api-card h3 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.api-card > div:not(.api-tags) {
+  min-width: 0;
 }
 
 .api-card p,
 .feature-card p,
 .scenario-grid p {
   margin: 8px 0 0;
-  color: #64748b;
   font-size: 14px;
   font-weight: 650;
   line-height: 1.7;
+  color: #64748b;
+}
+
+.api-card p {
+  display: -webkit-box;
+  height: 48px;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow-wrap: anywhere;
 }
 
 .api-tags,
@@ -1792,24 +1898,37 @@ function compactNumber(value: number | string | undefined) {
   grid-column: 1 / -1;
 }
 
+.api-tags {
+  align-items: flex-start;
+}
+
+.api-tags span {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
 .api-card a {
-  width: fit-content;
   gap: 7px;
-  color: #0f172a;
+  width: fit-content;
   font-size: 14px;
   font-weight: 950;
+  color: #0f172a;
   text-decoration: none;
 }
 
 .empty-card {
   display: flex;
-  min-height: 150px;
+  gap: 12px;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  color: #64748b;
+  min-height: 150px;
   font-size: 15px;
   font-weight: 800;
+  color: #64748b;
 }
 
 .region-map-section {
@@ -1818,14 +1937,17 @@ function compactNumber(value: number | string | undefined) {
 
 .simple-card-head {
   display: flex;
+  gap: 14px;
   align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
 }
 
 .simple-card-head span {
   display: block;
-  color: var(--home-primary);
   font-size: 12px;
   font-weight: 950;
+  color: var(--home-primary);
   letter-spacing: 0.1em;
 }
 
@@ -1836,38 +1958,29 @@ function compactNumber(value: number | string | undefined) {
 }
 
 .simple-map-card {
+  padding: 16px;
+  overflow: hidden;
+  background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 16px;
-  background: #fff;
-}
-
-.simple-map-card {
-  overflow: hidden;
-  padding: 16px;
-}
-
-.simple-card-head {
-  justify-content: space-between;
-  gap: 14px;
-  margin-bottom: 10px;
 }
 
 .simple-card-head h3 {
   margin: 5px 0 0;
-  color: #0f172a;
   font-size: 17px;
   font-weight: 950;
+  color: #0f172a;
 }
 
 .simple-card-head em {
   flex: 0 0 auto;
-  border-radius: 999px;
-  background: var(--home-soft);
-  color: var(--home-primary);
+  padding: 6px 10px;
   font-size: 12px;
   font-style: normal;
   font-weight: 900;
-  padding: 6px 10px;
+  color: var(--home-primary);
+  background: var(--home-soft);
+  border-radius: 999px;
 }
 
 .simple-map-visual {
@@ -1890,41 +2003,43 @@ function compactNumber(value: number | string | undefined) {
 
 .feature-card {
   display: grid;
-  min-height: 184px;
   grid-template-columns: 76px minmax(0, 1fr);
   gap: 20px;
-  border-color: rgb(var(--home-primary-rgb) / 16%);
-  background:
-    radial-gradient(circle at 94% 16%, rgb(var(--home-primary-rgb) / 10%), transparent 28%),
-    linear-gradient(135deg, rgb(255 255 255 / 96%), rgb(248 250 252 / 88%));
+  min-height: 184px;
   padding: 28px;
+  background:
+    radial-gradient(
+      circle at 94% 16%,
+      rgb(var(--home-primary-rgb) / 10%),
+      transparent 28%
+    ),
+    linear-gradient(135deg, rgb(255 255 255 / 96%), rgb(248 250 252 / 88%));
+  border-color: rgb(var(--home-primary-rgb) / 16%);
   animation: fade-up 0.58s ease both;
 }
 
 .feature-card::after {
   position: absolute;
-  inset: auto 24px 0 24px;
+  inset: auto 24px 0;
   height: 3px;
-  border-radius: 999px 999px 0 0;
-  background: linear-gradient(90deg, var(--home-primary), transparent);
   content: '';
+  background: linear-gradient(90deg, var(--home-primary), transparent);
+  border-radius: 999px 999px 0 0;
   opacity: 0.42;
 }
 
 .feature-card > span {
-  display: grid;
   position: relative;
   z-index: 1;
+  display: grid;
+  place-items: center;
   width: 64px;
   height: 64px;
-  place-items: center;
+  font-size: 30px;
+  color: var(--home-primary);
+  background: linear-gradient(145deg, #fff, var(--home-soft)), var(--home-soft);
   border: 1px solid rgb(var(--home-primary-rgb) / 18%);
   border-radius: 16px;
-  background:
-    linear-gradient(145deg, #fff, var(--home-soft)),
-    var(--home-soft);
-  color: var(--home-primary);
-  font-size: 30px;
   box-shadow: 0 14px 30px rgb(var(--home-primary-rgb) / 10%);
   transition:
     box-shadow 0.24s ease,
@@ -1941,10 +2056,10 @@ function compactNumber(value: number | string | undefined) {
 }
 
 .feature-card em {
-  border: 1px solid rgb(var(--home-primary-rgb) / 10%);
-  background: rgb(var(--home-primary-rgb) / 7%);
-  color: var(--home-primary);
   font-style: normal;
+  color: var(--home-primary);
+  background: rgb(var(--home-primary-rgb) / 7%);
+  border: 1px solid rgb(var(--home-primary-rgb) / 10%);
 }
 
 .scenario-grid {
@@ -1956,11 +2071,15 @@ function compactNumber(value: number | string | undefined) {
 .scenario-grid article {
   position: relative;
   min-height: 230px;
-  border-color: rgb(var(--home-primary-rgb) / 14%);
-  background:
-    radial-gradient(circle at 88% 18%, rgb(var(--home-primary-rgb) / 12%), transparent 24%),
-    linear-gradient(180deg, #fff 0%, rgb(248 250 252 / 92%) 100%);
   padding: 26px;
+  background:
+    radial-gradient(
+      circle at 88% 18%,
+      rgb(var(--home-primary-rgb) / 12%),
+      transparent 24%
+    ),
+    linear-gradient(180deg, #fff 0%, rgb(248 250 252 / 92%) 100%);
+  border-color: rgb(var(--home-primary-rgb) / 14%);
   animation: fade-up 0.58s ease both;
 }
 
@@ -1970,15 +2089,20 @@ function compactNumber(value: number | string | undefined) {
   bottom: 20px;
   left: 22px;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgb(var(--home-primary-rgb) / 22%), transparent);
   content: '';
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(var(--home-primary-rgb) / 22%),
+    transparent
+  );
 }
 
 .scenario-grid b {
-  color: rgb(var(--home-primary-rgb) / 16%);
   font-size: 46px;
   font-weight: 950;
   line-height: 1;
+  color: rgb(var(--home-primary-rgb) / 16%);
   transition: color 0.24s ease;
 }
 
@@ -1989,12 +2113,12 @@ function compactNumber(value: number | string | undefined) {
   display: grid;
   width: 42px;
   height: 42px;
+  padding: 9px;
+  font-size: 24px;
+  color: var(--home-primary);
+  background: var(--home-soft);
   border: 1px solid rgb(var(--home-primary-rgb) / 12%);
   border-radius: 14px;
-  background: var(--home-soft);
-  color: var(--home-primary);
-  font-size: 24px;
-  padding: 9px;
   box-shadow: 0 12px 26px rgb(var(--home-primary-rgb) / 9%);
   transition:
     box-shadow 0.24s ease,
@@ -2015,17 +2139,21 @@ function compactNumber(value: number | string | undefined) {
 }
 
 .quickstart-section {
-  overflow: hidden;
-  justify-content: space-between;
   gap: 24px;
+  justify-content: space-between;
+  padding: 30px 34px;
   margin-top: 30px;
   margin-bottom: 56px;
+  overflow: hidden;
+  color: #fff;
+  background: linear-gradient(
+    135deg,
+    #0f172a,
+    var(--home-primary) 58%,
+    #0f766e
+  );
   border: 1px solid var(--home-primary);
   border-radius: 16px;
-  background:
-    linear-gradient(135deg, #0f172a, var(--home-primary) 58%, #0f766e);
-  color: #fff;
-  padding: 30px 34px;
   animation: fade-up 0.6s ease both;
 }
 
@@ -2044,9 +2172,9 @@ function compactNumber(value: number | string | undefined) {
 .quickstart-section a {
   flex: 0 0 auto;
   height: 44px;
-  background: #fff;
-  color: var(--home-primary);
   padding: 0 22px;
+  color: var(--home-primary);
+  background: #fff;
 }
 
 @keyframes fade-up {
@@ -2063,11 +2191,15 @@ function compactNumber(value: number | string | undefined) {
 
 @keyframes grid-drift {
   from {
-    background-position: 0 0, 0 0;
+    background-position:
+      0 0,
+      0 0;
   }
 
   to {
-    background-position: 96px 0, 0 72px;
+    background-position:
+      96px 0,
+      0 72px;
   }
 }
 
@@ -2114,10 +2246,10 @@ function compactNumber(value: number | string | undefined) {
   .home-page::before,
   .trend-card::before,
   .quickstart-section::before {
+    scroll-behavior: auto !important;
     transition-duration: 0.001ms !important;
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
-    scroll-behavior: auto !important;
   }
 }
 
@@ -2137,8 +2269,8 @@ function compactNumber(value: number | string | undefined) {
 
 @media (max-width: 960px) {
   .site-header {
-    height: auto;
     grid-template-columns: 1fr auto;
+    height: auto;
     padding: 16px 20px;
   }
 
@@ -2164,8 +2296,8 @@ function compactNumber(value: number | string | undefined) {
 
   .hero-actions,
   .quickstart-section {
-    align-items: stretch;
     flex-direction: column;
+    align-items: stretch;
   }
 
   .primary-button,
@@ -2190,7 +2322,6 @@ function compactNumber(value: number | string | undefined) {
   .trend-chart {
     height: 260px !important;
   }
-
 }
 
 @media (max-width: 720px) {
@@ -2207,8 +2338,8 @@ function compactNumber(value: number | string | undefined) {
   }
 
   .eyebrow {
-    font-size: 12px;
     padding: 7px 12px;
+    font-size: 12px;
   }
 
   .hero-copy h1 {
@@ -2234,8 +2365,8 @@ function compactNumber(value: number | string | undefined) {
   }
 
   .hot-strip {
-    margin-top: 16px;
     padding: 14px;
+    margin-top: 16px;
   }
 
   .trend-card {
@@ -2262,7 +2393,6 @@ function compactNumber(value: number | string | undefined) {
   .content-section {
     padding: 36px 0;
   }
-
 }
 
 @media (max-width: 560px) {
@@ -2276,8 +2406,8 @@ function compactNumber(value: number | string | undefined) {
   }
 
   .brand-mark::after {
-    left: 13px;
     bottom: 4px;
+    left: 13px;
     width: 10px;
     height: 11px;
   }
@@ -2321,6 +2451,5 @@ function compactNumber(value: number | string | undefined) {
   .scenario-grid article {
     padding: 18px;
   }
-
 }
 </style>
