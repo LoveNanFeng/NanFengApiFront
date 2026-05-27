@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import type { WorkbenchQuickNavItem } from '@vben/common-ui';
 import type { EchartsUIType } from '@vben/plugins/echarts';
 
 import type {
@@ -56,15 +55,19 @@ import {
   syncRechargeOrder,
 } from '#/api/payment';
 import RichTextPreview from '#/components/rich-text-preview/index.vue';
+import RedeemModal from '#/views/redeem-card/user/modules/redeem-modal.vue';
 
 const router = useRouter();
 const userStore = useUserStore();
 const DEFAULT_LOCAL_AVATAR = '/logo.png';
 
+type HeaderAssetAction = 'balanceRecharge' | 'cardRedeem' | 'packageDetail';
+
 interface HeaderAssetItem {
-  action?: 'balanceRecharge' | 'packageDetail' | undefined;
+  action?: HeaderAssetAction | undefined;
   icon: string;
   label: string;
+  secondaryAction?: HeaderAssetAction | undefined;
   value: string;
 }
 
@@ -75,6 +78,13 @@ interface UserQuickActionItem {
   icon: string;
   title: string;
   url: string;
+}
+
+interface QuickNavItem {
+  color?: string;
+  icon: string;
+  title: string;
+  url?: string;
 }
 
 type PackageDetailTab = 'global' | 'interface';
@@ -180,6 +190,7 @@ const [PackageDetailDrawer, packageDetailDrawerApi] = useVbenDrawer({
   showConfirmButton: false,
 });
 const rechargeVisible = ref(false);
+const redeemVisible = ref(false);
 const rechargeAmount = ref<number>(50);
 const rechargeLoading = ref(false);
 const rechargeSyncLoading = ref(false);
@@ -396,6 +407,7 @@ const headerAssets = computed<HeaderAssetItem[]>(() => [
     action: 'balanceRecharge',
     icon: 'lucide:wallet-cards',
     label: '账户余额',
+    secondaryAction: 'cardRedeem',
     value: formatMoney(userStats.value.balance),
   },
   {
@@ -561,7 +573,7 @@ const callTrendTotalText = computed(
   () => `${formatCount(activeCallTrend.value.total)} 次`,
 );
 
-const quickNavItems: WorkbenchQuickNavItem[] = [
+const quickNavItems: QuickNavItem[] = [
   {
     color: '#1677ff',
     icon: 'mdi:view-dashboard-outline',
@@ -600,7 +612,7 @@ const quickNavItems: WorkbenchQuickNavItem[] = [
   },
 ];
 
-function navTo(nav: WorkbenchQuickNavItem) {
+function navTo(nav: QuickNavItem) {
   if (nav.url?.startsWith('http')) {
     openWindow(nav.url);
     return;
@@ -1287,14 +1299,22 @@ function openPackageDetail() {
   packageDetailDrawerApi.open();
 }
 
-function handleAssetAction(action?: HeaderAssetItem['action']) {
+function handleAssetAction(action?: HeaderAssetAction) {
   if (action === 'balanceRecharge') {
     openBalanceRecharge();
+    return;
+  }
+  if (action === 'cardRedeem') {
+    redeemVisible.value = true;
     return;
   }
   if (action === 'packageDetail') {
     openPackageDetail();
   }
+}
+
+async function onRedeemSuccess() {
+  await refreshWorkbenchStats();
 }
 
 onMounted(async () => {
@@ -1356,35 +1376,52 @@ watch(
       </template>
       <template #extra>
         <div class="user-asset-summary">
-          <div
-            v-for="item in headerAssets"
-            :key="item.label"
-            class="user-asset-item"
-          >
+            <div
+              v-for="item in headerAssets"
+              :key="item.label"
+              class="user-asset-item"
+              :class="{ 'has-secondary-action': item.secondaryAction }"
+            >
             <div class="user-asset-icon">
               <IconifyIcon :icon="item.icon" />
             </div>
             <div class="user-asset-content min-w-0 text-right">
               <div class="user-asset-label">{{ item.label }}</div>
               <div class="user-asset-value">{{ item.value }}</div>
-              <button
-                v-if="item.action"
-                class="user-asset-detail-btn"
-                :class="{ 'is-recharge': item.action === 'balanceRecharge' }"
-                type="button"
-                @click="handleAssetAction(item.action)"
+              <div
+                v-if="item.action || item.secondaryAction"
+                class="user-asset-actions"
               >
-                <IconifyIcon
-                  :icon="
-                    item.action === 'balanceRecharge'
-                      ? 'lucide:plus'
-                      : 'lucide:panel-right-open'
-                  "
-                />
-                <span>{{
-                  item.action === 'balanceRecharge' ? '充值' : '查看详情'
-                }}</span>
-              </button>
+                <button
+                  v-if="item.secondaryAction"
+                  class="user-asset-detail-btn is-redeem"
+                  type="button"
+                  @click="handleAssetAction(item.secondaryAction)"
+                >
+                  <IconifyIcon icon="lucide:ticket-check" />
+                  <span>卡密兑换</span>
+                </button>
+                <button
+                  v-if="item.action"
+                  class="user-asset-detail-btn"
+                  :class="{
+                    'is-recharge': item.action === 'balanceRecharge',
+                  }"
+                  type="button"
+                  @click="handleAssetAction(item.action)"
+                >
+                  <IconifyIcon
+                    :icon="
+                      item.action === 'balanceRecharge'
+                        ? 'lucide:plus'
+                        : 'lucide:panel-right-open'
+                    "
+                  />
+                  <span>{{
+                    item.action === 'balanceRecharge' ? '充值' : '查看详情'
+                  }}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1853,6 +1890,8 @@ watch(
         </Tabs>
       </div>
     </PackageDetailDrawer>
+
+    <RedeemModal v-model:open="redeemVisible" @success="onRedeemSuccess" />
 
     <Modal
       v-model:open="dailyNoticeVisible"
@@ -3367,9 +3406,9 @@ watch(
 
 .user-asset-summary {
   display: grid;
-  grid-template-columns: repeat(3, minmax(112px, 1fr));
+  grid-template-columns: minmax(230px, 1.2fr) repeat(2, minmax(132px, 0.9fr));
   gap: 14px;
-  width: min(620px, 100%);
+  width: min(720px, 100%);
 }
 
 .user-asset-item {
@@ -3420,14 +3459,23 @@ watch(
   white-space: nowrap;
 }
 
+.user-asset-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  justify-content: flex-end;
+  margin-top: 8px;
+  white-space: nowrap;
+}
+
 .user-asset-detail-btn {
   display: inline-flex;
+  flex: 0 0 auto;
   gap: 4px;
   align-items: center;
   justify-content: center;
   height: 26px;
   padding: 0 8px;
-  margin-top: 8px;
   font-size: 12px;
   font-weight: 700;
   line-height: 1;
@@ -3436,6 +3484,10 @@ watch(
   background: hsl(var(--primary) / 8%);
   border: 1px solid hsl(var(--primary) / 16%);
   border-radius: 6px;
+}
+
+.user-asset-item.has-secondary-action {
+  min-width: 230px;
 }
 
 .user-asset-detail-btn:hover {
@@ -3449,6 +3501,16 @@ watch(
 
 .user-asset-detail-btn.is-recharge:hover {
   background: hsl(var(--primary) / 15%);
+}
+
+.user-asset-detail-btn.is-redeem {
+  color: #16a34a;
+  background: rgb(22 163 74 / 8%);
+  border-color: rgb(22 163 74 / 18%);
+}
+
+.user-asset-detail-btn.is-redeem:hover {
+  background: rgb(22 163 74 / 14%);
 }
 
 .recharge-panel {
@@ -3750,7 +3812,7 @@ watch(
   }
 
   .user-asset-summary {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: minmax(230px, 1.2fr) repeat(2, minmax(132px, 0.9fr));
     width: 100%;
   }
 }

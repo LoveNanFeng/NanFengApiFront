@@ -84,6 +84,11 @@ export function useColumns<T = PackageApi.InterfacePackage>(
 ): VxeTableGridColumns {
   return [
     {
+      field: 'id',
+      title: 'ID',
+      width: 90,
+    },
+    {
       field: 'interfaceName',
       minWidth: 180,
       title: $t('system.package.interfaceName'),
@@ -102,7 +107,11 @@ export function useColumns<T = PackageApi.InterfacePackage>(
       field: 'specs',
       formatter: ({ cellValue }) =>
         Array.isArray(cellValue)
-          ? cellValue.map((item) => item.specName).join('、')
+          ? cellValue
+              .map((item) =>
+                item.id ? `#${item.id} ${item.specName}` : item.specName,
+              )
+              .join('、')
           : '',
       minWidth: 240,
       title: $t('system.package.specs'),

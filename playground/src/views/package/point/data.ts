@@ -83,6 +83,11 @@ export function useColumns<T = PackageApi.PointPackage>(
 ): VxeTableGridColumns {
   return [
     {
+      field: 'id',
+      title: 'ID',
+      width: 90,
+    },
+    {
       field: 'name',
       minWidth: 180,
       title: $t('system.package.name'),
