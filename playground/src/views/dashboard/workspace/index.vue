@@ -1376,12 +1376,12 @@ watch(
       </template>
       <template #extra>
         <div class="user-asset-summary">
-            <div
-              v-for="item in headerAssets"
-              :key="item.label"
-              class="user-asset-item"
-              :class="{ 'has-secondary-action': item.secondaryAction }"
-            >
+          <div
+            v-for="item in headerAssets"
+            :key="item.label"
+            class="user-asset-item"
+            :class="{ 'has-secondary-action': item.secondaryAction }"
+          >
             <div class="user-asset-icon">
               <IconifyIcon :icon="item.icon" />
             </div>

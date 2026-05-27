@@ -130,14 +130,18 @@ export function useColumns<T = PackageApi.GlobalPackage>(
     {
       field: 'dailyLimit',
       formatter: ({ cellValue }) =>
-        Number(cellValue ?? 0) === 0 ? $t('system.package.unlimited') : cellValue,
+        Number(cellValue ?? 0) === 0
+          ? $t('system.package.unlimited')
+          : cellValue,
       title: $t('system.package.dailyLimit'),
       width: 150,
     },
     {
       field: 'qpsLimit',
       formatter: ({ cellValue }) =>
-        Number(cellValue ?? 0) === 0 ? $t('system.package.unlimited') : cellValue,
+        Number(cellValue ?? 0) === 0
+          ? $t('system.package.unlimited')
+          : cellValue,
       title: $t('system.package.qpsLimit'),
       width: 150,
     },
