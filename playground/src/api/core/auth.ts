@@ -9,8 +9,8 @@ export namespace AuthApi {
   }
 
   export interface CaptchaResult {
-    challenge: string;
     captchaId: string;
+    challenge: string;
     difficulty: number;
   }
 

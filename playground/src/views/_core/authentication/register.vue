@@ -1,8 +1,5 @@
 <script lang="ts" setup>
-import type {
-  CaptchaVerifyPassingData,
-  VbenFormSchema,
-} from '@vben/common-ui';
+import type { CaptchaVerifyPassingData, VbenFormSchema } from '@vben/common-ui';
 import type { Recordable } from '@vben/types';
 
 import type { AuthApi } from '#/api';
@@ -110,7 +107,8 @@ async function handleSendMobileCode(event: Event) {
     message.warning($t('authentication.registerDisabledTip'));
     return;
   }
-  const mobile = (event.currentTarget as HTMLButtonElement).dataset.mobile ?? '';
+  const mobile =
+    (event.currentTarget as HTMLButtonElement).dataset.mobile ?? '';
   if (!isValidMobile(mobile)) {
     message.warning($t('authentication.mobileErrortip'));
     return;
@@ -231,10 +229,7 @@ const EmailCodeInput = markRaw(
       );
 
       function onInput(event: Event) {
-        emit(
-          'update:modelValue',
-          (event.target as HTMLInputElement).value,
-        );
+        emit('update:modelValue', (event.target as HTMLInputElement).value);
       }
 
       return () =>
@@ -270,8 +265,8 @@ const EmailCodeInput = markRaw(
               codeCountdown.value > 0
                 ? `${codeCountdown.value}s`
                 : (sendingCode.value
-                    ? $t('authentication.sending')
-                    : $t('authentication.sendEmailCode')),
+                  ? $t('authentication.sending')
+                  : $t('authentication.sendEmailCode')),
             ),
           ],
         );
@@ -347,8 +342,8 @@ const MobileCodeInput = markRaw(
               mobileCodeCountdown.value > 0
                 ? `${mobileCodeCountdown.value}s`
                 : (sendingMobileCode.value
-                    ? $t('authentication.sending')
-                    : $t('authentication.sendEmailCode')),
+                  ? $t('authentication.sending')
+                  : $t('authentication.sendEmailCode')),
             ),
           ],
         );
@@ -505,10 +500,7 @@ function handleSubmit(value: Recordable<any>) {
     message.warning($t('authentication.registerDisabledTip'));
     return;
   }
-  const {
-    agreePolicy: _agreePolicy,
-    ...registerParams
-  } = value;
+  const { agreePolicy: _agreePolicy, ...registerParams } = value;
   void authStore.authRegister(registerParams);
 }
 
