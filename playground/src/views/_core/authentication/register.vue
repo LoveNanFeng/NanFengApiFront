@@ -1,19 +1,26 @@
 <script lang="ts" setup>
-import type { VbenFormSchema } from '@vben/common-ui';
+import type {
+  CaptchaVerifyPassingData,
+  VbenFormSchema,
+} from '@vben/common-ui';
 import type { Recordable } from '@vben/types';
+
+import type { AuthApi } from '#/api';
 
 import { computed, defineComponent, h, markRaw, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
-import { AuthenticationRegister, z } from '@vben/common-ui';
+import { AuthenticationRegister, SliderCaptcha, z } from '@vben/common-ui';
 import { $t } from '@vben/locales';
 
-import { Button, Empty, Spin, message } from 'ant-design-vue';
+import { Button, Empty, message, Modal, Spin } from 'ant-design-vue';
 
 import {
+  getCaptchaApi,
   getRegisterConfigApi,
   sendRegisterEmailCodeApi,
   sendRegisterMobileCodeApi,
+  verifyCaptchaApi,
 } from '#/api/core/auth';
 import { useAuthStore } from '#/store';
 
@@ -30,6 +37,14 @@ const codeCountdown = ref(0);
 const sendingMobileCode = ref(false);
 const mobileCodeCountdown = ref(0);
 const registerClosedImage = Empty.PRESENTED_IMAGE_SIMPLE;
+const captchaModalOpen = ref(false);
+const captchaModalKey = ref(0);
+const captchaChecking = ref(false);
+const captcha = ref<AuthApi.CaptchaResult | null>(null);
+const pendingCodeRequest = ref<null | {
+  target: string;
+  type: 'email' | 'mobile';
+}>(null);
 
 function isValidEmail(value: string) {
   return /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(value);
@@ -73,9 +88,13 @@ async function handleSendEmailCode(event: Event) {
     return;
   }
 
+  await openSendCodeCaptcha({ target: email, type: 'email' });
+}
+
+async function sendEmailCode(email: string, captchaId: string) {
   sendingCode.value = true;
   try {
-    await sendRegisterEmailCodeApi(email);
+    await sendRegisterEmailCodeApi(email, captchaId);
     message.success($t('authentication.emailCodeSendSuccess'));
     startCountdown();
   } finally {
@@ -97,9 +116,13 @@ async function handleSendMobileCode(event: Event) {
     return;
   }
 
+  await openSendCodeCaptcha({ target: mobile, type: 'mobile' });
+}
+
+async function sendMobileCode(mobile: string, captchaId: string) {
   sendingMobileCode.value = true;
   try {
-    await sendRegisterMobileCodeApi(mobile);
+    await sendRegisterMobileCodeApi(mobile, captchaId);
     message.success($t('authentication.mobileCodeSendSuccess'));
     startMobileCountdown();
   } finally {
@@ -107,7 +130,78 @@ async function handleSendMobileCode(event: Event) {
   }
 }
 
+async function openSendCodeCaptcha(request: {
+  target: string;
+  type: 'email' | 'mobile';
+}) {
+  pendingCodeRequest.value = request;
+  try {
+    const res = await getCaptchaApi();
+    captcha.value = res;
+    captchaModalKey.value++;
+    captchaModalOpen.value = true;
+  } catch {
+    pendingCodeRequest.value = null;
+    captcha.value = null;
+    message.error('验证码加载失败，请重试');
+  }
+}
+
+function closeSendCodeCaptcha() {
+  if (captchaChecking.value) {
+    return;
+  }
+  captchaModalOpen.value = false;
+  captcha.value = null;
+  pendingCodeRequest.value = null;
+}
+
+async function reloadSendCodeCaptcha() {
+  try {
+    const res = await getCaptchaApi();
+    captcha.value = res;
+    captchaModalKey.value++;
+  } catch {
+    captchaModalOpen.value = false;
+    captcha.value = null;
+    pendingCodeRequest.value = null;
+    message.error('验证码加载失败，请重试');
+  }
+}
+
+async function onSendCodeCaptchaSuccess(values: CaptchaVerifyPassingData) {
+  if (!captcha.value || !pendingCodeRequest.value || captchaChecking.value) {
+    return;
+  }
+  captchaChecking.value = true;
+  const currentCaptcha = captcha.value;
+  const currentRequest = pendingCodeRequest.value;
+  try {
+    await verifyCaptchaApi(currentCaptcha, String(values.time));
+  } catch {
+    await reloadSendCodeCaptcha();
+    captchaChecking.value = false;
+    return;
+  }
+
+  captchaChecking.value = false;
+  captchaModalOpen.value = false;
+  captcha.value = null;
+  pendingCodeRequest.value = null;
+  try {
+    const sendCode =
+      currentRequest.type === 'email' ? sendEmailCode : sendMobileCode;
+    await sendCode(currentRequest.target, currentCaptcha.captchaId);
+  } catch {
+    // 请求拦截器会展示接口返回的错误信息。
+  } finally {
+    sendingCode.value = false;
+    sendingMobileCode.value = false;
+  }
+}
+
 const EmailCodeInput = markRaw(
+  // eslint-disable-next-line vue/one-component-per-file
   defineComponent({
     name: 'EmailCodeInput',
     props: {
@@ -132,6 +226,7 @@ const EmailCodeInput = markRaw(
           isValidEmail(emailValue.value) &&
           !sendingCode.value &&
           codeCountdown.value <= 0 &&
+          !captchaModalOpen.value &&
           !props.disabled,
       );
 
@@ -174,9 +269,9 @@ const EmailCodeInput = markRaw(
               },
               codeCountdown.value > 0
                 ? `${codeCountdown.value}s`
-                : sendingCode.value
-                  ? $t('authentication.sending')
-                  : $t('authentication.sendEmailCode'),
+                : (sendingCode.value
+                    ? $t('authentication.sending')
+                    : $t('authentication.sendEmailCode')),
             ),
           ],
         );
@@ -185,6 +280,7 @@ const EmailCodeInput = markRaw(
 );
 
 const MobileCodeInput = markRaw(
+  // eslint-disable-next-line vue/one-component-per-file
   defineComponent({
     name: 'MobileCodeInput',
     props: {
@@ -209,6 +305,7 @@ const MobileCodeInput = markRaw(
           isValidMobile(mobileValue.value) &&
           !sendingMobileCode.value &&
           mobileCodeCountdown.value <= 0 &&
+          !captchaModalOpen.value &&
           !props.disabled,
       );
 
@@ -249,9 +346,9 @@ const MobileCodeInput = markRaw(
               },
               mobileCodeCountdown.value > 0
                 ? `${mobileCodeCountdown.value}s`
-                : sendingMobileCode.value
-                  ? $t('authentication.sending')
-                  : $t('authentication.sendEmailCode'),
+                : (sendingMobileCode.value
+                    ? $t('authentication.sending')
+                    : $t('authentication.sendEmailCode')),
             ),
           ],
         );
@@ -438,31 +535,52 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div
-    v-if="!registerConfigLoaded"
-    class="flex min-h-[320px] items-center justify-center"
-  >
-    <Spin />
-  </div>
-  <div
-    v-else-if="!registerEnabled"
-    class="flex min-h-[360px] flex-col items-center justify-center text-center"
-  >
-    <Empty :description="null" :image="registerClosedImage" />
-    <div class="-mt-2 text-lg font-semibold text-foreground">
-      管理员暂未开启注册功能
+  <div>
+    <div
+      v-if="!registerConfigLoaded"
+      class="flex min-h-[320px] items-center justify-center"
+    >
+      <Spin />
     </div>
-    <div class="text-muted-foreground mt-2 max-w-[320px] text-sm leading-6">
-      当前站点暂未开放新用户注册，请联系管理员开启后再进行注册。
+    <div
+      v-else-if="!registerEnabled"
+      class="flex min-h-[360px] flex-col items-center justify-center text-center"
+    >
+      <Empty :description="null" :image="registerClosedImage" />
+      <div class="-mt-2 text-lg font-semibold text-foreground">
+        管理员暂未开启注册功能
+      </div>
+      <div class="text-muted-foreground mt-2 max-w-[320px] text-sm leading-6">
+        当前站点暂未开放新用户注册，请联系管理员开启后再进行注册。
+      </div>
+      <Button class="mt-6 min-w-[120px]" type="primary" @click="goToLogin">
+        {{ $t('authentication.goToLogin') }}
+      </Button>
     </div>
-    <Button class="mt-6 min-w-[120px]" type="primary" @click="goToLogin">
-      {{ $t('authentication.goToLogin') }}
-    </Button>
+    <AuthenticationRegister
+      v-else
+      :form-schema="formSchema"
+      :loading="authStore.loginLoading"
+      @submit="handleSubmit"
+    />
+    <Modal
+      :closable="!captchaChecking"
+      :footer="null"
+      :mask-closable="false"
+      :open="captchaModalOpen"
+      title="安全验证"
+      width="380px"
+      @cancel="closeSendCodeCaptcha"
+    >
+      <div class="space-y-4 py-2">
+        <p class="text-sm text-gray-500">
+          请完成滑块验证，验证通过后会自动发送验证码。
+        </p>
+        <SliderCaptcha
+          :key="captchaModalKey"
+          @success="onSendCodeCaptchaSuccess"
+        />
+      </div>
+    </Modal>
   </div>
-  <AuthenticationRegister
-    v-else
-    :form-schema="formSchema"
-    :loading="authStore.loginLoading"
-    @submit="handleSubmit"
-  />
 </template>

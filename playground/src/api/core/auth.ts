@@ -120,15 +120,27 @@ export async function getRegisterConfigApi() {
 /**
  * 发送注册邮箱验证码
  */
-export async function sendRegisterEmailCodeApi(email: string) {
-  return requestClient.post<boolean>('/auth/register/email-code', { email });
+export async function sendRegisterEmailCodeApi(
+  email: string,
+  captchaId: string,
+) {
+  return requestClient.post<boolean>('/auth/register/email-code', {
+    captchaId,
+    email,
+  });
 }
 
 /**
  * 发送注册短信验证码
  */
-export async function sendRegisterMobileCodeApi(mobile: string) {
-  return requestClient.post<boolean>('/auth/register/mobile-code', { mobile });
+export async function sendRegisterMobileCodeApi(
+  mobile: string,
+  captchaId: string,
+) {
+  return requestClient.post<boolean>('/auth/register/mobile-code', {
+    captchaId,
+    mobile,
+  });
 }
 
 /**
