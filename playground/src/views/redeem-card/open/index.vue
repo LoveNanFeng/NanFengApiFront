@@ -1,6 +1,7 @@
 <script lang="ts" setup>
-import type { RedeemCardApi } from '#/api/redeem-card';
 import type { TableColumnsType } from 'ant-design-vue';
+
+import type { RedeemCardApi } from '#/api/redeem-card';
 
 import { computed, onMounted, reactive, ref } from 'vue';
 
@@ -75,12 +76,17 @@ const modalTitle = computed(() =>
 
 const openKmEndpoint = computed(() => withCurrentOrigin('/open/v1/km'));
 
-type OpenKeyRecord = RedeemCardApi.OpenKeyItem | Record<string, any>;
+type OpenKeyRecord = Record<string, any> | RedeemCardApi.OpenKeyItem;
 
 const columns: TableColumnsType<RedeemCardApi.OpenKeyItem> = [
   { key: 'keyInfo', title: 'Key 信息', width: 260 },
   { dataIndex: 'kmKey', key: 'kmKey', title: 'kmkey', width: 340 },
-  { dataIndex: 'lastUsedTime', key: 'lastUsedTime', title: '最后调用', width: 190 },
+  {
+    dataIndex: 'lastUsedTime',
+    key: 'lastUsedTime',
+    title: '最后调用',
+    width: 190,
+  },
   { dataIndex: 'example', key: 'example', title: '调用示例', width: 560 },
   {
     align: 'center',
@@ -106,7 +112,9 @@ function normalizeText(value?: null | string) {
 function withCurrentOrigin(pathOrUrl: string) {
   if (!pathOrUrl) return '';
   if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
-  const normalizedPath = pathOrUrl.startsWith('/') ? pathOrUrl : `/${pathOrUrl}`;
+  const normalizedPath = pathOrUrl.startsWith('/')
+    ? pathOrUrl
+    : `/${pathOrUrl}`;
   if (typeof window === 'undefined') return normalizedPath;
   return `${window.location.origin}${normalizedPath}`;
 }
@@ -245,11 +253,7 @@ onMounted(() => {
 <template>
   <Page auto-content-height>
     <div class="redeem-open-page">
-      <Alert
-        show-icon
-        type="info"
-        message="公开接口生成卡密"
-      >
+      <Alert show-icon type="info" message="公开接口生成卡密">
         <template #description>
           <div class="redeem-open-help">
             <div class="redeem-open-help__summary">
@@ -266,9 +270,7 @@ onMounted(() => {
                 <IconifyIcon
                   class="size-4"
                   :icon="
-                    helpExpanded
-                      ? 'lucide:chevron-up'
-                      : 'lucide:chevron-down'
+                    helpExpanded ? 'lucide:chevron-up' : 'lucide:chevron-down'
                   "
                 />
                 {{ helpExpanded ? '收起参数详情' : '展开参数详情' }}
@@ -308,8 +310,8 @@ onMounted(() => {
                 </div>
               </div>
               <p>
-                全站套餐和点数套餐传对应套餐 ID，接口套餐传规格 ID；余额卡密不传 member，
-                需要传 money。
+                全站套餐和点数套餐传对应套餐 ID，接口套餐传规格 ID；余额卡密不传
+                member， 需要传 money。
               </p>
             </div>
           </div>
@@ -331,7 +333,9 @@ onMounted(() => {
         <div class="redeem-open-doc">
           <span>示例</span>
           <code>
-            {{ openKmEndpoint }}?kmkey=xxx&user=user001&type=BALANCE&money=10.00&time=1&count=1
+            {{
+              openKmEndpoint
+            }}?kmkey=xxx&user=user001&type=BALANCE&money=10.00&time=1&count=1
           </code>
         </div>
 
@@ -399,7 +403,10 @@ onMounted(() => {
                   @click="copyText(record.kmKey)"
                 >
                   <span>{{ record.kmKey }}</span>
-                  <IconifyIcon class="redeem-copy-chip__icon" icon="lucide:copy" />
+                  <IconifyIcon
+                    class="redeem-copy-chip__icon"
+                    icon="lucide:copy"
+                  />
                 </button>
               </template>
               <template v-else-if="column.key === 'lastUsedTime'">
@@ -481,10 +488,7 @@ onMounted(() => {
 
           <label>
             <span>状态</span>
-            <Select
-              v-model:value="formState.status"
-              :options="statusOptions"
-            />
+            <Select v-model:value="formState.status" :options="statusOptions" />
           </label>
         </div>
       </Modal>
@@ -540,8 +544,9 @@ onMounted(() => {
 
 .redeem-open-help code {
   padding: 1px 6px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    'Liberation Mono', 'Courier New', monospace;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    'Courier New', monospace;
   font-size: 13px;
   font-weight: 800;
   color: rgb(30 64 175);
@@ -678,8 +683,9 @@ onMounted(() => {
   min-width: 0;
   height: 34px;
   padding: 0 10px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    'Liberation Mono', 'Courier New', monospace;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    'Courier New', monospace;
   font-size: 13px;
   font-weight: 700;
   color: hsl(var(--primary));

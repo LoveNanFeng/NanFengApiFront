@@ -36,7 +36,12 @@ const pagination = reactive({
 const columns = [
   { dataIndex: 'cardCode', key: 'cardCode', title: '卡密', width: 240 },
   { dataIndex: 'cardType', key: 'cardType', title: '类型', width: 140 },
-  { dataIndex: 'rewardSummary', key: 'rewardSummary', title: '到账内容', width: 260 },
+  {
+    dataIndex: 'rewardSummary',
+    key: 'rewardSummary',
+    title: '到账内容',
+    width: 260,
+  },
   { dataIndex: 'createTime', key: 'createTime', title: '兑换时间', width: 180 },
 ];
 
@@ -204,8 +209,9 @@ onMounted(() => {
 }
 
 .redeem-code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    'Liberation Mono', 'Courier New', monospace;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    'Courier New', monospace;
   font-size: 13px;
   font-weight: 700;
 }

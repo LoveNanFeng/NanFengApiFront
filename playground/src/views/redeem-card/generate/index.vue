@@ -47,8 +47,10 @@ const usedOptions = [
 const tableScroll = { x: 1050 };
 const resultTableScroll = { x: 680 };
 
-interface GenerateFormState
-  extends Omit<RedeemCardApi.GeneratePayload, 'expireTime' | 'remark'> {
+interface GenerateFormState extends Omit<
+  RedeemCardApi.GeneratePayload,
+  'expireTime' | 'remark'
+> {
   expireTime?: Dayjs;
 }
 
@@ -88,7 +90,12 @@ const cardColumns = [
   { dataIndex: 'cardType', key: 'cardType', title: '类型', width: 130 },
   { dataIndex: 'reward', key: 'reward', title: '奖励内容', width: 240 },
   { dataIndex: 'used', key: 'used', title: '使用状态', width: 110 },
-  { dataIndex: 'usedUsername', key: 'usedUsername', title: '使用者', width: 140 },
+  {
+    dataIndex: 'usedUsername',
+    key: 'usedUsername',
+    title: '使用者',
+    width: 140,
+  },
   { dataIndex: 'expireTime', key: 'expireTime', title: '过期时间', width: 170 },
   { dataIndex: 'createTime', key: 'createTime', title: '生成时间', width: 170 },
 ];
@@ -293,11 +300,7 @@ onMounted(async () => {
             <h2>生成卡密</h2>
             <p>选择卡密类型、奖励内容和生成数量。</p>
           </div>
-          <Button
-            type="primary"
-            :loading="submitting"
-            @click="submitGenerate"
-          >
+          <Button type="primary" :loading="submitting" @click="submitGenerate">
             <IconifyIcon class="size-4" icon="lucide:ticket-plus" />
             生成卡密
           </Button>
@@ -592,8 +595,9 @@ onMounted(async () => {
 }
 
 .redeem-code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    'Liberation Mono', 'Courier New', monospace;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    'Courier New', monospace;
   font-size: 13px;
   font-weight: 700;
 }

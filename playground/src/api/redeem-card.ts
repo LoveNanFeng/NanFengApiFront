@@ -178,18 +178,14 @@ export function generateRedeemCards(data: RedeemCardApi.GeneratePayload) {
   );
 }
 
-export function getRedeemCardOpenKeys(
-  params: RedeemCardApi.OpenKeyListParams,
-) {
+export function getRedeemCardOpenKeys(params: RedeemCardApi.OpenKeyListParams) {
   return requestClient.get<{
     items: RedeemCardApi.OpenKeyItem[];
     total: number;
   }>('/redeem-card/open-keys', { params });
 }
 
-export function createRedeemCardOpenKey(
-  data: RedeemCardApi.OpenKeyPayload,
-) {
+export function createRedeemCardOpenKey(data: RedeemCardApi.OpenKeyPayload) {
   return requestClient.post<boolean>('/redeem-card/open-keys', data);
 }
 

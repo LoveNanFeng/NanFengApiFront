@@ -6,14 +6,7 @@ import { onMounted, reactive, ref } from 'vue';
 import { Page } from '@vben/common-ui';
 import { IconifyIcon } from '@vben/icons';
 
-import {
-  Button,
-  Input,
-  Pagination,
-  Select,
-  Table,
-  Tag,
-} from 'ant-design-vue';
+import { Button, Input, Pagination, Select, Table, Tag } from 'ant-design-vue';
 
 import { getRedeemCardLogs } from '#/api/redeem-card';
 
@@ -43,7 +36,12 @@ const total = ref(0);
 const columns = [
   { dataIndex: 'cardCode', key: 'cardCode', title: '卡密', width: 250 },
   { dataIndex: 'cardType', key: 'cardType', title: '类型', width: 130 },
-  { dataIndex: 'rewardSummary', key: 'rewardSummary', title: '奖励内容', width: 260 },
+  {
+    dataIndex: 'rewardSummary',
+    key: 'rewardSummary',
+    title: '奖励内容',
+    width: 260,
+  },
   { dataIndex: 'user', key: 'user', title: '使用者', width: 170 },
   { dataIndex: 'clientIp', key: 'clientIp', title: '来源IP', width: 150 },
   { dataIndex: 'createTime', key: 'createTime', title: '使用时间', width: 180 },
@@ -204,8 +202,9 @@ onMounted(() => {
 }
 
 .redeem-code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    'Liberation Mono', 'Courier New', monospace;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    'Courier New', monospace;
   font-size: 13px;
   font-weight: 700;
 }
