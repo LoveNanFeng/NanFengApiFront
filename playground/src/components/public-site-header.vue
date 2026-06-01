@@ -136,8 +136,7 @@ onBeforeUnmount(() => {
           :href="item.href"
           rel="noopener noreferrer"
           target="_blank"
-          >{{ item.label }}</a
-        >
+          >{{ item.label }}</a>
         <RouterLink
           v-else
           :class="{ active: props.activeKey === item.key }"
@@ -218,8 +217,7 @@ onBeforeUnmount(() => {
             rel="noopener noreferrer"
             target="_blank"
             @click="closeMobileMenu"
-            >{{ item.label }}</a
-          >
+            >{{ item.label }}</a>
           <RouterLink
             v-else
             :class="{ active: props.activeKey === item.key }"

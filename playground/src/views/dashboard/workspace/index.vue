@@ -449,9 +449,9 @@ const metricCards = computed(() => [
     footerLabel: '剩余次数',
     footerValue: usePerInterfaceQuota.value
       ? '见明细'
-      : userStats.value.remainingUnlimited
+      : (userStats.value.remainingUnlimited
         ? '无限'
-        : formatCount(userStats.value.remainingCalls),
+        : formatCount(userStats.value.remainingCalls)),
     icon: 'lucide:activity',
     title: '今日调用',
     value: formatCount(userStats.value.todayCalls),
@@ -477,16 +477,16 @@ const metricCards = computed(() => [
     footerLabel: 'QPS',
     footerValue: usePerInterfaceQuota.value
       ? '见明细'
-      : userStats.value.qpsLimitUnlimited
+      : (userStats.value.qpsLimitUnlimited
         ? '不限'
-        : formatCount(userStats.value.qpsLimit),
+        : formatCount(userStats.value.qpsLimit)),
     icon: 'lucide:gauge',
     title: '每日限额',
     value: usePerInterfaceQuota.value
       ? '分接口'
-      : userStats.value.dailyLimitUnlimited
+      : (userStats.value.dailyLimitUnlimited
         ? '不限'
-        : formatCount(userStats.value.dailyLimit),
+        : formatCount(userStats.value.dailyLimit)),
   },
 ]);
 

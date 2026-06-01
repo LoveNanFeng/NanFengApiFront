@@ -96,7 +96,7 @@ defineExpose({
         </slot>
       </template>
     </Title>
-    <slot />
+    <slot></slot>
     <Form />
 
     <VbenButton

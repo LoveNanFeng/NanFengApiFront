@@ -25,12 +25,12 @@ function maskEmail(val: string): string {
   if (!val) return '';
   const at = val.indexOf('@');
   if (at <= 2) return val;
-  return `${val.substring(0, 2)}***${val.substring(at)}`;
+  return `${val.slice(0, 2)}***${val.slice(Math.max(0, at))}`;
 }
 
 function maskMobile(val: string): string {
   if (!val || val.length < 7) return val;
-  return `${val.substring(0, 3)}****${val.substring(val.length - 4)}`;
+  return `${val.slice(0, 3)}****${val.slice(Math.max(0, val.length - 4))}`;
 }
 
 const formSchema = computed(() => {
@@ -63,9 +63,9 @@ const formSchema = computed(() => {
       label: 'QQ 快捷登录',
       description: qqBound.value
         ? `已绑定 QQ：${qqNickname.value || 'QQ用户'}`
-        : qqEnabled.value
+        : (qqEnabled.value
           ? '未绑定 QQ，可在下方绑定后使用快捷登录'
-          : '管理员未启用 QQ 快捷登录',
+          : '管理员未启用 QQ 快捷登录'),
     },
   ];
 });

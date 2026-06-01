@@ -421,8 +421,8 @@ function formatApiPrice(item: HomeApi.HotApiItem) {
 
 function formatHeroSlogan(value: null | string | undefined) {
   const slogan = String(value || defaultSiteConfig.slogan)
-    .replace(/[，,、]+/g, ' · ')
-    .replace(/\s+/g, ' ')
+    .replaceAll(/[，,、]+/g, ' · ')
+    .replaceAll(/\s+/g, ' ')
     .trim();
   return slogan || defaultSiteConfig.slogan;
 }

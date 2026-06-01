@@ -316,9 +316,9 @@ const EmailCodeInput = markRaw(
               },
               codeCountdown.value > 0
                 ? `${codeCountdown.value}s`
-                : sendingCode.value
+                : (sendingCode.value
                   ? $t('authentication.sending')
-                  : $t('authentication.sendEmailCode'),
+                  : $t('authentication.sendEmailCode')),
             ),
           ],
         );
@@ -393,9 +393,9 @@ const MobileCodeInput = markRaw(
               },
               mobileCodeCountdown.value > 0
                 ? `${mobileCodeCountdown.value}s`
-                : sendingMobileCode.value
+                : (sendingMobileCode.value
                   ? $t('authentication.sending')
-                  : $t('authentication.sendCode'),
+                  : $t('authentication.sendCode')),
             ),
           ],
         );

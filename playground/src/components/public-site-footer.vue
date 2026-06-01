@@ -128,9 +128,9 @@ const protectedEntryPath = computed(() =>
         <section>
           <h3>支持</h3>
           <RouterLink :to="protectedEntryPath">帮助中心</RouterLink>
-          <RouterLink :to="{ path: '/', hash: '#quickstart' }"
-            >快速接入</RouterLink
-          >
+          <RouterLink :to="{ path: '/', hash: '#quickstart' }">
+快速接入
+</RouterLink>
           <RouterLink :to="consolePath">控制台</RouterLink>
         </section>
         <section>
