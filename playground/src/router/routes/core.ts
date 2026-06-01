@@ -161,6 +161,14 @@ const coreRoutes: RouteRecordRaw[] = [
           title: $t('page.auth.register'),
         },
       },
+      {
+        name: 'QqCallback',
+        path: 'qq-callback',
+        component: () => import('#/views/_core/authentication/qq-callback.vue'),
+        meta: {
+          title: 'QQ快捷登录',
+        },
+      },
     ],
   },
 ];

@@ -3,9 +3,9 @@ import { requestClient } from '#/api/request';
 export namespace RegisterConfigApi {
   export interface OpenConfig {
     defaultUserQps: number;
-    registerIpHourLimit: number;
     registerEnabled: 0 | 1;
     registerGiftPoints: number;
+    registerIpHourLimit: number;
     verificationCodeIpDayLimit: number;
     verificationCodeIpHourLimit: number;
     verificationCodeIpMinuteLimit: number;
@@ -31,6 +31,15 @@ export namespace RegisterConfigApi {
     signName: string;
     templateId: string;
     testMobile?: string;
+  }
+
+  export interface QqLoginConfig {
+    appId: string;
+    appKey: string;
+    enabled: 0 | 1;
+    frontendBaseUrl: string;
+    redirectUri: string;
+    suggestedRedirectUri?: string;
   }
 }
 
@@ -64,7 +73,9 @@ async function getRegisterMobileConfig() {
   );
 }
 
-async function updateRegisterMobileConfig(data: RegisterConfigApi.MobileConfig) {
+async function updateRegisterMobileConfig(
+  data: RegisterConfigApi.MobileConfig,
+) {
   return requestClient.put('/system/register/mobile-config', data);
 }
 
@@ -72,12 +83,24 @@ async function testRegisterMobileConfig(data: RegisterConfigApi.MobileConfig) {
   return requestClient.post('/system/register/mobile-config/test', data);
 }
 
+async function getQqLoginConfig() {
+  return requestClient.get<RegisterConfigApi.QqLoginConfig>(
+    '/system/login/qq-config',
+  );
+}
+
+async function updateQqLoginConfig(data: RegisterConfigApi.QqLoginConfig) {
+  return requestClient.put('/system/login/qq-config', data);
+}
+
 export {
+  getQqLoginConfig,
   getRegisterEmailConfig,
   getRegisterMobileConfig,
   getRegisterOpenConfig,
   testRegisterEmailConfig,
   testRegisterMobileConfig,
+  updateQqLoginConfig,
   updateRegisterEmailConfig,
   updateRegisterMobileConfig,
   updateRegisterOpenConfig,

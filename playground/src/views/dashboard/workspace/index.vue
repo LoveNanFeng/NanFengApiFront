@@ -393,6 +393,13 @@ const adminHotApis = computed(() => adminStats.value.hotApis ?? []);
 const adminActiveUsers = computed(() => adminStats.value.activeUsers ?? []);
 const adminAlerts = computed(() => adminStats.value.alerts ?? []);
 
+const hasBoundEmail = computed(() =>
+  Boolean(String(userStore.userInfo?.email ?? '').trim()),
+);
+const shouldShowBindEmailWarning = computed(
+  () => isUserWorkspace.value && !hasBoundEmail.value,
+);
+
 const memberPackage = computed(() => userStats.value.memberPackage ?? null);
 
 const hasPackageDetail = computed(
@@ -442,9 +449,9 @@ const metricCards = computed(() => [
     footerLabel: '剩余次数',
     footerValue: usePerInterfaceQuota.value
       ? '见明细'
-      : (userStats.value.remainingUnlimited
+      : userStats.value.remainingUnlimited
         ? '无限'
-        : formatCount(userStats.value.remainingCalls)),
+        : formatCount(userStats.value.remainingCalls),
     icon: 'lucide:activity',
     title: '今日调用',
     value: formatCount(userStats.value.todayCalls),
@@ -470,16 +477,16 @@ const metricCards = computed(() => [
     footerLabel: 'QPS',
     footerValue: usePerInterfaceQuota.value
       ? '见明细'
-      : (userStats.value.qpsLimitUnlimited
+      : userStats.value.qpsLimitUnlimited
         ? '不限'
-        : formatCount(userStats.value.qpsLimit)),
+        : formatCount(userStats.value.qpsLimit),
     icon: 'lucide:gauge',
     title: '每日限额',
     value: usePerInterfaceQuota.value
       ? '分接口'
-      : (userStats.value.dailyLimitUnlimited
+      : userStats.value.dailyLimitUnlimited
         ? '不限'
-        : formatCount(userStats.value.dailyLimit)),
+        : formatCount(userStats.value.dailyLimit),
   },
 ]);
 
@@ -1365,6 +1372,27 @@ watch(
 
 <template>
   <div class="p-5">
+    <div
+      v-if="shouldShowBindEmailWarning"
+      class="bind-email-warning mb-4"
+      role="alert"
+    >
+      <div class="bind-email-warning__body">
+        <span class="bind-email-warning__icon">
+          <IconifyIcon icon="lucide:circle-alert" />
+        </span>
+        <div class="min-w-0">
+          <div class="bind-email-warning__title">请尽快绑定邮箱</div>
+          <div class="bind-email-warning__desc">
+            当前账号尚未绑定邮箱，忘记密码时无法接收重置链接。
+          </div>
+        </div>
+      </div>
+      <Button danger size="small" type="primary" @click="navToUrl('/profile')">
+        去绑定邮箱
+      </Button>
+    </div>
+
     <WorkbenchHeader v-if="isUserWorkspace" :avatar="DEFAULT_LOCAL_AVATAR">
       <template #title>
         早安，{{
@@ -2184,6 +2212,56 @@ watch(
 </template>
 
 <style scoped>
+.bind-email-warning {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  color: #991b1b;
+  background:
+    linear-gradient(135deg, rgb(254 242 242 / 96%), rgb(255 247 247 / 88%)),
+    hsl(var(--card));
+  border: 1px solid rgb(248 113 113 / 62%);
+  border-left: 4px solid #ef4444;
+  border-radius: 8px;
+  box-shadow: 0 12px 30px rgb(239 68 68 / 10%);
+}
+
+.bind-email-warning__body {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+}
+
+.bind-email-warning__icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  font-size: 19px;
+  color: #dc2626;
+  background: rgb(254 226 226 / 90%);
+  border-radius: 8px;
+}
+
+.bind-email-warning__title {
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 22px;
+}
+
+.bind-email-warning__desc {
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
+  color: #b91c1c;
+}
+
 .admin-workbench {
   color: hsl(var(--foreground));
 }
@@ -3818,6 +3896,15 @@ watch(
 }
 
 @media (max-width: 640px) {
+  .bind-email-warning {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .bind-email-warning :deep(.ant-btn) {
+    width: fit-content;
+  }
+
   .admin-metric-grid,
   .admin-quick-grid {
     grid-template-columns: 1fr;

@@ -27,18 +27,6 @@ const pageSize = 12;
 const total = ref(0);
 
 const canLoadMore = computed(() => items.value.length < total.value);
-const methodOptions: Array<{ label: string; value: '' | MarketApi.RequestMethod }> = [
-  { label: '全部方式', value: '' },
-  { label: 'GET', value: 'GET' },
-  { label: 'POST', value: 'POST' },
-  { label: 'GET/POST', value: 'GET_POST' },
-];
-const priceOptions: Array<{ label: string; value: '' | MarketApi.PriceType }> = [
-  { label: '全部价格', value: '' },
-  { label: '免费接口', value: 'FREE' },
-  { label: '付费接口', value: 'PAID' },
-  { label: '点数计费', value: 'POINT' },
-];
 onMounted(() => {
   void loadApis(true);
 });
@@ -144,10 +132,17 @@ function priceClass(item: MarketApi.ApiItem) {
     <form class="search-box" @submit.prevent="submitSearch">
       <IconifyIcon icon="lucide:search" />
       <input v-model="keyword" placeholder="搜索接口名称或描述" type="search" />
-      <button v-if="keyword" aria-label="清空搜索" type="button" @click="clearSearch">
+      <button
+        v-if="keyword"
+        aria-label="清空搜索"
+        type="button"
+        @click="clearSearch"
+      >
         <IconifyIcon icon="lucide:x" />
       </button>
-      <button aria-label="搜索接口" class="search-submit" type="submit">搜索</button>
+      <button aria-label="搜索接口" class="search-submit" type="submit">
+        搜索
+      </button>
     </form>
 
     <section class="market-shell">
@@ -169,14 +164,20 @@ function priceClass(item: MarketApi.ApiItem) {
           >
             <div class="api-card-top">
               <span class="api-icon">
-                <img v-if="item.avatarUrl" :alt="item.name" :src="item.avatarUrl" />
+                <img
+                  v-if="item.avatarUrl"
+                  :alt="item.name"
+                  :src="item.avatarUrl"
+                />
                 <IconifyIcon v-else icon="lucide:boxes" />
               </span>
-              <div v-if="Number(item.isTop) === 1 || Number(item.isFeatured) === 1" class="api-tags">
+              <div class="api-tags">
                 <span v-if="Number(item.isTop) === 1">置顶</span>
                 <span v-if="Number(item.isFeatured) === 1">精选</span>
               </div>
-              <span class="method-badge">{{ methodLabel(item.requestMethod) }}</span>
+              <span class="method-badge">{{
+                methodLabel(item.requestMethod)
+              }}</span>
             </div>
 
             <div class="api-card-body">
@@ -201,7 +202,13 @@ function priceClass(item: MarketApi.ApiItem) {
           <span>{{ loading ? '正在加载接口' : '没有匹配的接口' }}</span>
         </div>
 
-        <button v-if="canLoadMore" class="load-more" :disabled="loading" type="button" @click="loadMore">
+        <button
+          v-if="canLoadMore"
+          class="load-more"
+          :disabled="loading"
+          type="button"
+          @click="loadMore"
+        >
           {{ loading ? '加载中' : '加载更多' }}
         </button>
       </section>
@@ -222,15 +229,22 @@ function priceClass(item: MarketApi.ApiItem) {
   flex-direction: column;
   min-height: 100vh;
   padding-top: 72px;
+  font-family:
+    'HarmonyOS Sans SC', MiSans, 'Microsoft YaHei UI', 'PingFang SC', sans-serif;
+  color: #0f172a;
   background:
-    linear-gradient(90deg, rgb(var(--home-primary-rgb) / 5%) 1px, transparent 1px),
-    linear-gradient(180deg, rgb(var(--home-primary-rgb) / 5%) 1px, transparent 1px),
+    linear-gradient(
+      90deg,
+      rgb(var(--home-primary-rgb) / 5%) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      180deg,
+      rgb(var(--home-primary-rgb) / 5%) 1px,
+      transparent 1px
+    ),
     #f8fbff;
   background-size: 72px 72px;
-  color: #0f172a;
-  font-family:
-    'HarmonyOS Sans SC', 'MiSans', 'Microsoft YaHei UI', 'PingFang SC',
-    sans-serif;
 }
 
 .search-box,
@@ -241,105 +255,107 @@ function priceClass(item: MarketApi.ApiItem) {
 }
 
 .list-head span {
-  color: var(--home-primary);
   font-size: 12px;
   font-weight: 950;
+  color: var(--home-primary);
   letter-spacing: 0.08em;
 }
 
 .api-card-body p,
 .list-head small {
-  color: #64748b;
   font-size: 14px;
   font-weight: 700;
   line-height: 1.8;
+  color: #64748b;
 }
 
 .search-box {
+  gap: 10px;
   width: min(100% - 40px, 720px);
   min-height: 52px;
-  gap: 10px;
+  padding: 6px 8px 6px 16px;
   margin: 36px auto 28px;
+  background: #fff;
   border: 1px solid rgb(var(--home-primary-rgb) / 20%);
   border-radius: 10px;
-  background: #fff;
   box-shadow: 0 4px 16px rgb(15 23 42 / 5%);
-  padding: 6px 8px 6px 16px;
 }
 
 .search-box svg {
-  color: var(--home-primary);
-  font-size: 20px;
   flex: 0 0 auto;
+  font-size: 20px;
+  color: var(--home-primary);
 }
 
 .search-box input {
-  min-width: 0;
   flex: 1;
-  border: 0;
-  outline: none;
-  color: #0f172a;
+  min-width: 0;
   font-size: 15px;
   font-weight: 600;
+  color: #0f172a;
+  outline: none;
+  border: 0;
 }
 
 .search-box button {
   display: inline-flex;
+  flex: 0 0 auto;
+  gap: 4px;
   align-items: center;
   justify-content: center;
-  gap: 4px;
   height: 38px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: #94a3b8;
-  cursor: pointer;
+  padding: 0 8px;
   font-size: 13px;
   font-weight: 700;
-  padding: 0 8px;
+  color: #94a3b8;
   white-space: nowrap;
-  flex: 0 0 auto;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
 }
 
 .search-box button.search-submit {
   min-width: 76px;
-  border: 1px solid var(--home-primary);
-  background: var(--home-primary);
-  color: #fff;
-  font-size: 14px;
   padding: 0 20px;
+  font-size: 14px;
+  color: #fff;
+  background: var(--home-primary);
+  border: 1px solid var(--home-primary);
 }
 
 .load-more {
+  width: 100%;
   height: 40px;
-  border: 1px solid #dbe3ef;
-  border-radius: 8px;
-  background: #fff;
+  margin-top: 18px;
+  font-weight: 850;
   color: #0f172a;
   cursor: pointer;
-  font-weight: 850;
+  background: #fff;
+  border: 1px solid #dbe3ef;
+  border-radius: 8px;
 }
 
 .market-shell {
-  width: min(100% - 40px, 1320px);
   flex: 1 0 auto;
-  margin: 0 auto;
+  width: min(100% - 40px, 1320px);
   padding-bottom: 56px;
+  margin: 0 auto;
 }
 
 .api-card,
 .empty-state {
+  background: rgb(255 255 255 / 94%);
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  background: rgb(255 255 255 / 94%);
   box-shadow: 0 18px 42px rgb(15 23 42 / 6%);
 }
 
 .list-head {
   display: flex;
+  gap: 18px;
   align-items: end;
   justify-content: space-between;
-  gap: 18px;
   margin-bottom: 16px;
 }
 
@@ -357,19 +373,19 @@ function priceClass(item: MarketApi.ApiItem) {
 
 .api-card {
   position: relative;
-  min-height: 270px;
   display: flex;
-  overflow: hidden;
   flex-direction: column;
   gap: 18px;
-  border-color: rgb(var(--home-primary-rgb) / 10%);
+  min-height: 270px;
+  padding: 20px;
+  overflow: hidden;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
   background:
     linear-gradient(180deg, rgb(255 255 255 / 98%), rgb(255 255 255 / 90%)),
     linear-gradient(135deg, rgb(var(--home-primary-rgb) / 9%), transparent 42%);
-  color: inherit;
-  cursor: pointer;
-  padding: 20px;
-  text-decoration: none;
+  border-color: rgb(var(--home-primary-rgb) / 10%);
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease,
@@ -382,8 +398,12 @@ function priceClass(item: MarketApi.ApiItem) {
   right: 0;
   left: 0;
   height: 3px;
-  background: linear-gradient(90deg, var(--home-primary), rgb(var(--home-primary-rgb) / 8%));
   content: '';
+  background: linear-gradient(
+    90deg,
+    var(--home-primary),
+    rgb(var(--home-primary-rgb) / 8%)
+  );
   opacity: 0;
   transition: opacity 0.2s ease;
 }
@@ -408,48 +428,56 @@ function priceClass(item: MarketApi.ApiItem) {
 .api-card-top {
   display: grid;
   grid-template-columns: auto 1fr auto;
-  align-items: center;
   gap: 16px;
+  align-items: center;
 }
 
 .api-icon {
-  width: 58px;
-  height: 58px;
   display: inline-grid;
   flex: 0 0 auto;
   place-items: center;
+  width: 58px;
+  height: 58px;
+  font-size: 27px;
+  color: var(--home-primary);
+  background:
+    linear-gradient(
+      145deg,
+      rgb(255 255 255 / 80%),
+      rgb(var(--home-primary-rgb) / 8%)
+    ),
+    var(--home-soft);
   border: 1px solid rgb(var(--home-primary-rgb) / 16%);
   border-radius: 12px;
-  background:
-    linear-gradient(145deg, rgb(255 255 255 / 80%), rgb(var(--home-primary-rgb) / 8%)),
-    var(--home-soft);
-  color: var(--home-primary);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 88%),
     0 12px 24px rgb(var(--home-primary-rgb) / 8%);
-  font-size: 27px;
 }
 
 .api-icon img {
   width: 100%;
   height: 100%;
-  border-radius: 12px;
   object-fit: contain;
+  border-radius: 12px;
 }
 
 .method-badge {
-  height: 30px;
   display: inline-flex;
   flex: 0 0 auto;
+  grid-column: 3;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgb(var(--home-primary-rgb) / 10%);
-  border-radius: 999px;
-  background: rgb(248 250 252 / 88%);
-  color: #475569;
+  justify-self: end;
+  width: max-content;
+  height: 30px;
+  padding: 0 10px;
   font-size: 12px;
   font-weight: 950;
-  padding: 0 10px;
+  color: #475569;
+  white-space: nowrap;
+  background: rgb(248 250 252 / 88%);
+  border: 1px solid rgb(var(--home-primary-rgb) / 10%);
+  border-radius: 999px;
 }
 
 .api-card-body {
@@ -458,10 +486,10 @@ function priceClass(item: MarketApi.ApiItem) {
 
 .api-card-body h3 {
   margin: 0;
-  color: #0f172a;
   font-size: 18px;
   font-weight: 950;
   line-height: 1.35;
+  color: #0f172a;
 }
 
 .api-card-body p {
@@ -481,20 +509,20 @@ function priceClass(item: MarketApi.ApiItem) {
 
 .api-card-foot {
   display: flex;
+  gap: 16px;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
   margin-top: auto;
 }
 
 .api-card-action {
   display: inline-flex;
   flex: 0 0 auto;
-  align-items: center;
   gap: 6px;
-  color: var(--home-primary);
+  align-items: center;
   font-size: 13px;
   font-weight: 950;
+  color: var(--home-primary);
 }
 
 .api-card-action svg {
@@ -509,35 +537,35 @@ function priceClass(item: MarketApi.ApiItem) {
 .api-meta em,
 .api-meta span,
 .api-tags span {
-  min-height: 30px;
   display: inline-flex;
   align-items: center;
-  border-radius: 8px;
+  min-height: 30px;
+  padding: 6px 10px;
   font-size: 12px;
   font-style: normal;
   font-weight: 900;
-  padding: 6px 10px;
+  border-radius: 8px;
 }
 
 .api-meta em.free {
-  background: #ecfdf5;
   color: #059669;
+  background: #ecfdf5;
 }
 
 .api-meta em.point {
-  background: #fff7ed;
   color: #ea580c;
+  background: #fff7ed;
 }
 
 .api-meta em.paid {
-  background: #fef2f2;
   color: #dc2626;
+  background: #fef2f2;
 }
 
 .api-meta span,
 .api-tags span {
-  background: #f1f5f9;
   color: #475569;
+  background: #f1f5f9;
 }
 
 .api-tags span {
@@ -545,22 +573,17 @@ function priceClass(item: MarketApi.ApiItem) {
 }
 
 .empty-state {
-  min-height: 220px;
   display: grid;
   place-items: center;
-  color: #64748b;
-  font-weight: 850;
+  min-height: 220px;
   padding: 24px;
+  font-weight: 850;
+  color: #64748b;
 }
 
 .empty-state svg {
-  color: #94a3b8;
   font-size: 34px;
-}
-
-.load-more {
-  width: 100%;
-  margin-top: 18px;
+  color: #94a3b8;
 }
 
 @media (max-width: 1180px) {
@@ -586,11 +609,11 @@ function priceClass(item: MarketApi.ApiItem) {
   }
 
   .search-box {
+    gap: 8px;
     width: min(100% - 24px, 720px);
     min-height: 50px;
-    gap: 8px;
-    margin: 20px auto 20px;
     padding: 5px 6px 5px 14px;
+    margin: 20px auto;
   }
 
   .search-box input {
@@ -600,8 +623,8 @@ function priceClass(item: MarketApi.ApiItem) {
   .search-box button.search-submit {
     min-width: 66px;
     height: 36px;
-    font-size: 13px;
     padding: 0 16px;
+    font-size: 13px;
   }
 
   .market-shell {
@@ -628,15 +651,15 @@ function priceClass(item: MarketApi.ApiItem) {
   }
 
   .api-card {
-    min-height: 0;
     display: grid;
-    grid-template-columns: 48px minmax(0, 1fr);
     grid-template-areas:
       'top body'
       'foot foot';
+    grid-template-columns: 48px minmax(0, 1fr);
     gap: 14px;
-    border-radius: 12px;
+    min-height: 0;
     padding: 16px;
+    border-radius: 12px;
   }
 
   .api-card::before {
@@ -644,9 +667,9 @@ function priceClass(item: MarketApi.ApiItem) {
   }
 
   .api-card-top {
+    display: block;
     grid-area: top;
     align-items: start;
-    display: block;
   }
 
   .api-card-top .api-tags {
@@ -656,8 +679,8 @@ function priceClass(item: MarketApi.ApiItem) {
   .api-icon {
     width: 48px;
     height: 48px;
-    border-radius: 10px;
     font-size: 22px;
+    border-radius: 10px;
   }
 
   .method-badge {
@@ -665,8 +688,8 @@ function priceClass(item: MarketApi.ApiItem) {
     right: 16px;
     bottom: 16px;
     height: 24px;
-    font-size: 11px;
     padding: 0 8px;
+    font-size: 11px;
   }
 
   .api-card-body {
@@ -687,21 +710,21 @@ function priceClass(item: MarketApi.ApiItem) {
   }
 
   .api-card-foot {
-    grid-area: foot;
-    align-items: flex-start;
     flex-direction: column;
+    grid-area: foot;
     gap: 10px;
-    margin-top: 0;
+    align-items: flex-start;
     padding-right: 70px;
+    margin-top: 0;
   }
 
   .api-meta em,
   .api-meta span,
   .api-tags span {
     min-height: 26px;
-    border-radius: 999px;
-    font-size: 11px;
     padding: 5px 9px;
+    font-size: 11px;
+    border-radius: 999px;
   }
 
   .empty-state {

@@ -23,12 +23,15 @@ import { useAuthStore } from '#/store';
 
 defineOptions({ name: 'Register' });
 
+type RegisterType = 'email' | 'mobile';
+
 const authStore = useAuthStore();
 const router = useRouter();
 const registerConfigLoaded = ref(false);
 const registerEnabled = ref(true);
 const emailRegisterEnabled = ref(false);
 const mobileRegisterEnabled = ref(false);
+const activeRegisterType = ref<RegisterType>('email');
 const sendingCode = ref(false);
 const codeCountdown = ref(0);
 const sendingMobileCode = ref(false);
@@ -42,6 +45,55 @@ const pendingCodeRequest = ref<null | {
   target: string;
   type: 'email' | 'mobile';
 }>(null);
+
+const registerTypeOptions = computed<
+  Array<{ label: string; value: RegisterType }>
+>(() =>
+  [
+    { label: '邮箱注册', value: 'email' as const },
+    { label: '手机号注册', value: 'mobile' as const },
+  ].filter((item) =>
+    item.value === 'email'
+      ? emailRegisterEnabled.value
+      : mobileRegisterEnabled.value,
+  ),
+);
+
+const hasEnabledRegisterMethod = computed(
+  () => registerTypeOptions.value.length > 0,
+);
+
+const showRegisterTypeSwitch = computed(
+  () => registerTypeOptions.value.length > 1,
+);
+
+const isEmailRegisterActive = computed(
+  () => activeRegisterType.value === 'email' && emailRegisterEnabled.value,
+);
+
+const isMobileRegisterActive = computed(
+  () => activeRegisterType.value === 'mobile' && mobileRegisterEnabled.value,
+);
+
+function syncActiveRegisterType() {
+  if (
+    (activeRegisterType.value === 'email' && emailRegisterEnabled.value) ||
+    (activeRegisterType.value === 'mobile' && mobileRegisterEnabled.value)
+  ) {
+    return;
+  }
+  activeRegisterType.value = emailRegisterEnabled.value ? 'email' : 'mobile';
+}
+
+function setRegisterType(type: RegisterType) {
+  if (type === 'email' && !emailRegisterEnabled.value) {
+    return;
+  }
+  if (type === 'mobile' && !mobileRegisterEnabled.value) {
+    return;
+  }
+  activeRegisterType.value = type;
+}
 
 function isValidEmail(value: string) {
   return /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(value);
@@ -264,9 +316,9 @@ const EmailCodeInput = markRaw(
               },
               codeCountdown.value > 0
                 ? `${codeCountdown.value}s`
-                : (sendingCode.value
+                : sendingCode.value
                   ? $t('authentication.sending')
-                  : $t('authentication.sendEmailCode')),
+                  : $t('authentication.sendEmailCode'),
             ),
           ],
         );
@@ -341,9 +393,9 @@ const MobileCodeInput = markRaw(
               },
               mobileCodeCountdown.value > 0
                 ? `${mobileCodeCountdown.value}s`
-                : (sendingMobileCode.value
+                : sendingMobileCode.value
                   ? $t('authentication.sending')
-                  : $t('authentication.sendEmailCode')),
+                  : $t('authentication.sendCode'),
             ),
           ],
         );
@@ -366,7 +418,7 @@ const formSchema = computed((): VbenFormSchema[] => {
         .max(32)
         .regex(/^[\w-]+$/, { message: $t('authentication.usernameTip') }),
     },
-    ...(emailRegisterEnabled.value
+    ...(isEmailRegisterActive.value
       ? [
           {
             component: EmailCodeInput,
@@ -399,7 +451,7 @@ const formSchema = computed((): VbenFormSchema[] => {
           } satisfies VbenFormSchema,
         ]
       : []),
-    ...(mobileRegisterEnabled.value
+    ...(isMobileRegisterActive.value
       ? [
           {
             component: MobileCodeInput,
@@ -501,6 +553,13 @@ function handleSubmit(value: Recordable<any>) {
     return;
   }
   const { agreePolicy: _agreePolicy, ...registerParams } = value;
+  if (activeRegisterType.value === 'email') {
+    delete registerParams.mobile;
+    delete registerParams.mobileCode;
+  } else {
+    delete registerParams.email;
+    delete registerParams.emailCode;
+  }
   void authStore.authRegister(registerParams);
 }
 
@@ -516,10 +575,12 @@ onMounted(async () => {
       registerEnabled.value && !!config.emailRegisterEnabled;
     mobileRegisterEnabled.value =
       registerEnabled.value && !!config.mobileRegisterEnabled;
+    syncActiveRegisterType();
   } catch {
     registerEnabled.value = false;
     emailRegisterEnabled.value = false;
     mobileRegisterEnabled.value = false;
+    syncActiveRegisterType();
   } finally {
     registerConfigLoaded.value = true;
   }
@@ -535,7 +596,7 @@ onMounted(async () => {
       <Spin />
     </div>
     <div
-      v-else-if="!registerEnabled"
+      v-else-if="!registerEnabled || !hasEnabledRegisterMethod"
       class="flex min-h-[360px] flex-col items-center justify-center text-center"
     >
       <Empty :description="null" :image="registerClosedImage" />
@@ -554,7 +615,26 @@ onMounted(async () => {
       :form-schema="formSchema"
       :loading="authStore.loginLoading"
       @submit="handleSubmit"
-    />
+    >
+      <div
+        v-if="showRegisterTypeSwitch"
+        class="register-type-switch"
+        role="tablist"
+      >
+        <button
+          v-for="item in registerTypeOptions"
+          :key="item.value"
+          :aria-selected="activeRegisterType === item.value"
+          class="register-type-switch__item"
+          :class="{ 'is-active': activeRegisterType === item.value }"
+          role="tab"
+          type="button"
+          @click="setRegisterType(item.value)"
+        >
+          {{ item.label }}
+        </button>
+      </div>
+    </AuthenticationRegister>
     <Modal
       :closable="!captchaChecking"
       :footer="null"
@@ -576,3 +656,43 @@ onMounted(async () => {
     </Modal>
   </div>
 </template>
+
+<style scoped>
+.register-type-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3px;
+  padding: 3px;
+  margin: -10px 0 14px;
+  background: hsl(var(--muted) / 45%);
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+}
+
+.register-type-switch__item {
+  height: 34px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 34px;
+  color: hsl(var(--muted-foreground));
+  text-align: center;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.register-type-switch__item:hover {
+  color: hsl(var(--foreground));
+  background: hsl(var(--background) / 70%);
+}
+
+.register-type-switch__item.is-active {
+  color: hsl(var(--primary));
+  background: hsl(var(--primary) / 8%);
+  border-color: hsl(var(--primary) / 18%);
+}
+</style>

@@ -8,10 +8,6 @@ import { LOGIN_PATH } from '@vben/constants';
 import { IconifyIcon } from '@vben/icons';
 import { useAccessStore, useUserStore } from '@vben/stores';
 
-const API_MARKET_PATH = '/apilist';
-const LINKS_PATH = '/links';
-const CONSOLE_FALLBACK_PATH = '/workspace';
-
 interface ContactItem {
   icon: string;
   label: string;
@@ -27,40 +23,77 @@ const props = withDefaults(
   },
 );
 
+const API_MARKET_PATH = '/apilist';
+const LINKS_PATH = '/links';
+const CONSOLE_FALLBACK_PATH = '/workspace';
+
 const accessStore = useAccessStore();
 const userStore = useUserStore();
 
 const siteName = computed(
-  () => String(props.siteConfig.siteName || 'NanFengAPI').trim() || 'NanFengAPI',
+  () =>
+    String(props.siteConfig.siteName || 'NanFengAPI').trim() || 'NanFengAPI',
 );
-const siteLogoUrl = computed(() => String(props.siteConfig.logoUrl || '').trim());
+const siteLogoUrl = computed(() =>
+  String(props.siteConfig.logoUrl || '').trim(),
+);
 const siteSlogan = computed(
-  () => String(props.siteConfig.slogan || '').trim() || '稳定、清晰、可运营的 API 服务平台',
+  () =>
+    String(props.siteConfig.slogan || '').trim() ||
+    '稳定、清晰、可运营的 API 服务平台',
 );
 const siteDescription = computed(
-  () => String(props.siteConfig.description || '').trim() || '统一管理接口、Key、套餐、计费与调用日志。',
+  () =>
+    String(props.siteConfig.description || '').trim() ||
+    '统一管理接口、Key、套餐、计费与调用日志。',
 );
 const copyrightText = computed(
   () =>
     String(props.siteConfig.copyright || '').trim() ||
     `© 2026 ${siteName.value}. All rights reserved.`,
 );
-const icpText = computed(() => String(props.siteConfig.icp || '').trim() || 'API Billing Platform');
+const icpText = computed(
+  () => String(props.siteConfig.icp || '').trim() || 'API Billing Platform',
+);
 const contactItems = computed<ContactItem[]>(() =>
   [
-    { icon: 'lucide:mail', label: '邮箱', value: String(props.siteConfig.contactEmail || '').trim() },
-    { icon: 'lucide:phone', label: '电话', value: String(props.siteConfig.contactPhone || '').trim() },
-    { icon: 'lucide:message-circle', label: 'QQ', value: String(props.siteConfig.contactQq || '').trim() },
-    { icon: 'lucide:message-square', label: '微信', value: String(props.siteConfig.contactWechat || '').trim() },
-    { icon: 'lucide:map-pin', label: '地址', value: String(props.siteConfig.contactAddress || '').trim() },
+    {
+      icon: 'lucide:mail',
+      label: '邮箱',
+      value: String(props.siteConfig.contactEmail || '').trim(),
+    },
+    {
+      icon: 'lucide:phone',
+      label: '电话',
+      value: String(props.siteConfig.contactPhone || '').trim(),
+    },
+    {
+      icon: 'lucide:message-circle',
+      label: 'QQ',
+      value: String(props.siteConfig.contactQq || '').trim(),
+    },
+    {
+      icon: 'lucide:message-square',
+      label: '微信',
+      value: String(props.siteConfig.contactWechat || '').trim(),
+    },
+    {
+      icon: 'lucide:map-pin',
+      label: '地址',
+      value: String(props.siteConfig.contactAddress || '').trim(),
+    },
   ].filter((item) => item.value),
 );
 
 const consolePath = computed(() => {
-  const homePath = String(userStore.userInfo?.homePath || CONSOLE_FALLBACK_PATH).trim();
+  const homePath = String(
+    userStore.userInfo?.homePath || CONSOLE_FALLBACK_PATH,
+  ).trim();
   return homePath || CONSOLE_FALLBACK_PATH;
 });
-const protectedEntryPath = computed(() => (accessStore.accessToken ? consolePath.value : LOGIN_PATH));
+const protectedEntryPath = computed(() =>
+  accessStore.accessToken ? consolePath.value : LOGIN_PATH,
+);
 </script>
 
 <template>
@@ -68,7 +101,12 @@ const protectedEntryPath = computed(() => (accessStore.accessToken ? consolePath
     <div class="footer-main">
       <div class="footer-brand">
         <RouterLink class="brand" to="/">
-          <img v-if="siteLogoUrl" class="brand-logo" :alt="siteName" :src="siteLogoUrl" />
+          <img
+            v-if="siteLogoUrl"
+            class="brand-logo"
+            :alt="siteName"
+            :src="siteLogoUrl"
+          />
           <span v-else class="brand-mark" aria-hidden="true"></span>
           <span>{{ siteName }}</span>
         </RouterLink>
@@ -90,7 +128,9 @@ const protectedEntryPath = computed(() => (accessStore.accessToken ? consolePath
         <section>
           <h3>支持</h3>
           <RouterLink :to="protectedEntryPath">帮助中心</RouterLink>
-          <RouterLink :to="{ path: '/', hash: '#quickstart' }">快速接入</RouterLink>
+          <RouterLink :to="{ path: '/', hash: '#quickstart' }"
+            >快速接入</RouterLink
+          >
           <RouterLink :to="consolePath">控制台</RouterLink>
         </section>
         <section>
@@ -122,14 +162,18 @@ const protectedEntryPath = computed(() => (accessStore.accessToken ? consolePath
 .site-footer {
   position: relative;
   z-index: 1;
-  overflow: hidden;
   width: 100%;
   margin-top: 64px;
-  border-top: 1px solid rgb(var(--home-primary-rgb) / 10%);
-  background:
-    radial-gradient(circle at 12% 0%, rgb(var(--home-primary-rgb) / 8%), transparent 28%),
-    linear-gradient(180deg, rgb(255 255 255 / 92%), rgb(248 251 255 / 94%));
+  overflow: hidden;
   color: #64748b;
+  background:
+    radial-gradient(
+      circle at 12% 0%,
+      rgb(var(--home-primary-rgb) / 8%),
+      transparent 28%
+    ),
+    linear-gradient(180deg, rgb(255 255 255 / 92%), rgb(248 251 255 / 94%));
+  border-top: 1px solid rgb(var(--home-primary-rgb) / 10%);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 75%);
 }
 
@@ -138,27 +182,27 @@ const protectedEntryPath = computed(() => (accessStore.accessToken ? consolePath
   grid-template-columns: minmax(260px, 0.82fr) minmax(0, 1.5fr);
   gap: 44px;
   width: min(1440px, calc(100% - 96px));
-  margin: 0 auto;
   padding: 56px 0 44px;
+  margin: 0 auto;
 }
 
 .brand {
   display: flex;
-  min-width: 0;
-  align-items: center;
   gap: 12px;
-  color: #0f172a;
+  align-items: center;
+  min-width: 0;
   font-size: 22px;
   font-weight: 900;
+  color: #0f172a;
   text-decoration: none;
 }
 
 .brand-logo {
+  flex: 0 0 auto;
   width: 56px;
   height: 48px;
-  flex: 0 0 auto;
-  border-radius: 10px;
   object-fit: contain;
+  border-radius: 10px;
 }
 
 .brand > span:last-child {
@@ -178,35 +222,43 @@ const protectedEntryPath = computed(() => (accessStore.accessToken ? consolePath
 .brand-mark::before {
   position: absolute;
   inset: 0;
-  border-radius: 12px;
+  content: '';
   background: linear-gradient(
     145deg,
     #22d3ee 0%,
     var(--home-primary) 58%,
     var(--home-accent) 100%
   );
-  clip-path: polygon(46% 3%, 60% 3%, 100% 96%, 75% 96%, 51% 43%, 26% 96%, 0 96%);
-  content: '';
+  border-radius: 12px;
+  clip-path: polygon(
+    46% 3%,
+    60% 3%,
+    100% 96%,
+    75% 96%,
+    51% 43%,
+    26% 96%,
+    0 96%
+  );
 }
 
 .brand-mark::after {
   position: absolute;
-  left: 17px;
   bottom: 5px;
+  left: 17px;
   width: 11px;
   height: 12px;
+  content: '';
   background: rgb(255 255 255 / 88%);
   clip-path: polygon(50% 0, 100% 100%, 0 100%);
-  content: '';
 }
 
 .footer-brand p {
   max-width: 430px;
   margin: 16px 0 0;
-  color: #64748b;
   font-size: 14px;
   font-weight: 700;
   line-height: 1.8;
+  color: #64748b;
 }
 
 .footer-links {
@@ -217,21 +269,21 @@ const protectedEntryPath = computed(() => (accessStore.accessToken ? consolePath
 
 .footer-links section {
   display: grid;
-  align-content: start;
   gap: 10px;
+  align-content: start;
 }
 
 .footer-links h3 {
   margin: 0 0 4px;
-  color: #0f172a;
   font-size: 14px;
   font-weight: 950;
+  color: #0f172a;
 }
 
 .site-footer a {
-  color: #64748b;
   font-size: 13px;
   font-weight: 800;
+  color: #64748b;
   text-decoration: none;
   transition:
     color 0.2s ease,
@@ -251,54 +303,54 @@ const protectedEntryPath = computed(() => (accessStore.accessToken ? consolePath
 .contact-list span {
   display: grid;
   grid-template-columns: 18px max-content minmax(0, 1fr);
-  align-items: center;
   gap: 8px;
+  align-items: center;
   min-width: 0;
-  color: #64748b;
   font-size: 13px;
   font-weight: 800;
+  color: #64748b;
 }
 
 .contact-list svg {
-  color: var(--home-primary);
   font-size: 16px;
+  color: var(--home-primary);
 }
 
 .contact-list em {
-  color: #94a3b8;
   font-style: normal;
+  color: #94a3b8;
   white-space: nowrap;
 }
 
 .contact-list strong {
   min-width: 0;
   overflow: hidden;
-  color: #475569;
-  font-weight: 850;
   text-overflow: ellipsis;
+  font-weight: 850;
+  color: #475569;
   white-space: nowrap;
 }
 
 .contact-empty {
   margin: 0;
-  color: #94a3b8;
   font-size: 13px;
   font-weight: 800;
   line-height: 1.7;
+  color: #94a3b8;
 }
 
 .footer-bottom {
   display: flex;
+  gap: 18px;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
   width: min(1440px, calc(100% - 96px));
+  padding: 18px 0;
   margin: 0 auto;
-  border-top: 1px solid #e2e8f0;
-  color: #94a3b8;
   font-size: 12px;
   font-weight: 800;
-  padding: 18px 0;
+  color: #94a3b8;
+  border-top: 1px solid #e2e8f0;
 }
 
 @media (max-width: 960px) {
@@ -318,15 +370,15 @@ const protectedEntryPath = computed(() => (accessStore.accessToken ? consolePath
   }
 
   .footer-bottom {
-    align-items: stretch;
     flex-direction: column;
+    align-items: stretch;
   }
 }
 
 @media (max-width: 720px) {
   .site-footer {
-    margin-bottom: 0;
     margin-top: 40px;
+    margin-bottom: 0;
     background: #fff;
   }
 
@@ -347,8 +399,8 @@ const protectedEntryPath = computed(() => (accessStore.accessToken ? consolePath
   }
 
   .footer-bottom {
-    align-items: center;
     gap: 8px;
+    align-items: center;
     width: min(100% - 36px, 760px);
     padding: 18px 0 22px;
     font-size: 12px;
@@ -371,8 +423,8 @@ const protectedEntryPath = computed(() => (accessStore.accessToken ? consolePath
   }
 
   .brand-mark::after {
-    left: 13px;
     bottom: 4px;
+    left: 13px;
     width: 10px;
     height: 11px;
   }

@@ -18,7 +18,6 @@ import { echarts, EchartsUI, useEcharts } from '@vben/plugins/echarts';
 import { useAccessStore, useUserStore } from '@vben/stores';
 
 import { getHomeOverview } from '#/api/home';
-import chinaGeoJson from '#/assets/maps/china.json';
 import PublicSiteFooter from '#/components/public-site-footer.vue';
 import PublicSiteHeader from '#/components/public-site-header.vue';
 import { usePublicSiteTheme } from '#/composables/use-public-site-theme';
@@ -36,32 +35,17 @@ interface ScenarioCard {
   title: string;
 }
 
+interface SystemFlowItem {
+  desc: string;
+  icon: string;
+  label: string;
+  title: string;
+}
+
 interface ApiDisplayCard extends HomeApi.HotApiItem {
   desc: string;
   icon: string;
   tags: string[];
-}
-
-interface ChinaFeature {
-  properties?: {
-    adcode?: number | string;
-    center?: [number, number];
-    name?: string;
-  };
-}
-
-interface ChinaProvinceFeature {
-  properties: {
-    adcode?: number | string;
-    center: [number, number];
-    name: string;
-  };
-}
-
-interface ChinaProvinceFeatureWithCode extends ChinaProvinceFeature {
-  properties: ChinaProvinceFeature['properties'] & {
-    adcode: number | string;
-  };
 }
 
 const defaultSiteConfig: HomeApi.SiteConfig = {
@@ -75,7 +59,7 @@ const defaultSiteConfig: HomeApi.SiteConfig = {
   icp: '',
   logoUrl: '',
   siteName: 'NanFengAPI',
-  slogan: '稳定、清晰、可运营的 API 服务平台',
+  slogan: '清晰接入、调用可查、计费透明的 API 服务平台',
   updateTime: null,
 };
 
@@ -106,76 +90,34 @@ const emptyOverview: HomeApi.Overview = {
   },
 };
 
-const CHINA_MAP_NAME = 'nanfeng-china';
 const API_MARKET_PATH = '/apilist';
 const CONSOLE_FALLBACK_PATH = '/workspace';
 const REGISTER_PATH = '/auth/register';
 
-const chinaFeatures = (chinaGeoJson as { features: ChinaFeature[] }).features;
-const chinaProvinceFeatures = chinaFeatures.filter(isChinaProvinceFeature);
-const provinceCenterByName = new Map(
-  chinaProvinceFeatures.map((item) => [
-    item.properties.name,
-    item.properties.center,
-  ]),
-);
-const provinceFeatureByCode = new Map(
-  chinaProvinceFeatures.filter(hasProvinceCode).map((item) => [
-    String(item.properties.adcode),
-    {
-      center: item.properties.center,
-      name: item.properties.name,
-    },
-  ]),
-);
-
-function isChinaProvinceFeature(
-  item: ChinaFeature,
-): item is ChinaProvinceFeature {
-  const properties = item.properties;
-  return Boolean(
-    properties?.name &&
-    properties.center &&
-    String(properties.adcode || '') !== '100000_JD',
-  );
-}
-
-function hasProvinceCode(
-  item: ChinaProvinceFeature,
-): item is ChinaProvinceFeatureWithCode {
-  return (
-    item.properties.adcode !== undefined &&
-    item.properties.adcode !== null &&
-    String(item.properties.adcode).trim() !== ''
-  );
-}
-
-echarts.registerMap(CHINA_MAP_NAME, chinaGeoJson as any);
-
 const featureCards: FeatureCard[] = [
   {
-    desc: '接口列表、文档、调试、密钥、套餐和调用记录统一收口，后台运营不用在多个系统里来回切。',
+    desc: '接口列表、文档、调试、Key、套餐和调用记录集中在一个入口，接入和查询都更省事。',
     icon: 'lucide:layout-dashboard',
-    tags: ['接口管理', '在线调试', '调用记录'],
-    title: '统一 API 运营台',
+    tags: ['接口查询', '在线调试', '调用记录'],
+    title: '统一 API 服务入口',
   },
   {
-    desc: '支持全站 Key 与单接口 Key，配合接口套餐、点数和余额扣费，真实覆盖 API 商业化流程。',
+    desc: '支持全站 Key 与单接口 Key，按套餐、点数或余额结算，调用前规则清楚，调用后账单可查。',
     icon: 'lucide:key-round',
     tags: ['Key 管理', '鉴权', '扣费规则'],
-    title: '鉴权与计费闭环',
+    title: 'Key 授权与计费',
   },
   {
-    desc: '首页趋势、地区分布、峰值 QPS 和成功率都来自调用日志，运营情况一眼能看明白。',
+    desc: '调用趋势、峰值 QPS 和成功率来自真实日志，方便判断接口是否稳定、请求是否正常。',
     icon: 'lucide:activity',
-    tags: ['趋势统计', '地区排行', 'QPS'],
-    title: '真实调用可观测',
+    tags: ['趋势统计', '成功率', 'QPS'],
+    title: '调用状态可观察',
   },
   {
-    desc: '接口开关、精选展示、置顶排序和套餐配置分离，方便把稳定接口推到首页和市场。',
+    desc: '接口状态、精选展示、排序和套餐配置分离，用户能更快找到可用接口。',
     icon: 'lucide:badge-check',
     tags: ['精选接口', '状态控制', '套餐配置'],
-    title: '面向上架的接口体系',
+    title: '清晰的接口展示',
   },
 ];
 
@@ -191,16 +133,86 @@ const scenarioCards: ScenarioCard[] = [
     title: '企业系统集成',
   },
   {
-    desc: '按接口、Key、套餐和点数统计使用量，便于运营结算。',
+    desc: '按接口、Key、套餐和点数查看使用量，便于核对费用。',
     icon: 'lucide:receipt-text',
-    title: 'API 计费运营',
+    title: '用量费用核对',
   },
   {
-    desc: '通过日志、地区和趋势观察异常请求，快速定位接口问题。',
+    desc: '通过趋势、状态码和调用日志观察异常请求，快速定位接口问题。',
     icon: 'lucide:radar',
     title: '调用监控分析',
   },
 ];
+
+const systemFlowItems: SystemFlowItem[] = [
+  {
+    desc: '接口详情展示请求方式、价格、参数说明和返回示例，接入前先把规则看明白。',
+    icon: 'lucide:file-text',
+    label: '公开文档',
+    title: '参数示例清楚',
+  },
+  {
+    desc: 'Key、账号状态、接口权限和来源 IP 都会校验，正式调用边界更明确。',
+    icon: 'lucide:shield-check',
+    label: '权限校验',
+    title: '调用边界明确',
+  },
+  {
+    desc: '会员、套餐、点数和余额按规则扣费，调用后可以追踪每笔费用来源。',
+    icon: 'lucide:receipt-text',
+    label: '计费规则',
+    title: '费用来源可查',
+  },
+  {
+    desc: '每次请求的状态、耗时和错误信息可查，接口失败时能更快定位原因。',
+    icon: 'lucide:logs',
+    label: '调用记录',
+    title: '问题定位更快',
+  },
+];
+
+const integrationSteps = [
+  {
+    desc: '在接口市场查看接口详情、价格、请求方式、参数和返回示例。',
+    icon: 'lucide:store',
+    title: '选择接口',
+  },
+  {
+    desc: '按接口规则准备会员、接口会员、点数或余额，避免正式调用被拦截。',
+    icon: 'lucide:badge-check',
+    title: '准备权益',
+  },
+  {
+    desc: '在控制台创建全站 Key 或接口专属 Key，并按需配置 IP 白名单。',
+    icon: 'lucide:key-round',
+    title: '创建 Key',
+  },
+  {
+    desc: '通过公开网关调用接口，之后在控制台查看调用日志和扣费记录。',
+    icon: 'lucide:activity',
+    title: '调用观察',
+  },
+] as const;
+
+const keyAuthRules = [
+  {
+    desc: '所有公开接口都需要在 Query 中携带 key，例如 ?key=YOUR_API_KEY。',
+    label: '认证位置',
+  },
+  {
+    desc: 'Key 需要属于启用状态的账号，且必须有该接口的调用权限。',
+    label: '账号状态',
+  },
+  {
+    desc: '如果开启了 IP 白名单，调用来源 IP 必须在白名单范围内。',
+    label: '访问来源',
+  },
+  {
+    desc: '不要把 Key 写进前端页面或小程序源码，正式业务建议从服务端转发调用。',
+    label: '密钥保管',
+    warn: true,
+  },
+] as const;
 
 const apiIconPool = [
   'lucide:play-square',
@@ -211,11 +223,9 @@ const apiIconPool = [
   'lucide:database-zap',
 ];
 
-const chinaMapRef = ref<EchartsUIType>();
 const callTrendRef = ref<EchartsUIType>();
 const heroTrendPanelRef = ref<HTMLElement>();
 const hotStripRef = ref<HTMLElement>();
-const { renderEcharts: renderChinaMap } = useEcharts(chinaMapRef);
 const { renderEcharts: renderCallTrend } = useEcharts(callTrendRef);
 
 const accessStore = useAccessStore();
@@ -224,7 +234,6 @@ const overview = ref<HomeApi.Overview>(emptyOverview);
 const trendPanelSink = ref(0);
 
 const callTrend = computed(() => overview.value.callTrend7d ?? []);
-const regions = computed(() => overview.value.regionRanking ?? []);
 const hotApis = computed(() => overview.value.hotApis ?? []);
 const homeNotice = computed(
   () =>
@@ -242,16 +251,7 @@ const siteName = computed(
   () =>
     String(siteConfig.value.siteName || 'NanFengAPI').trim() || 'NanFengAPI',
 );
-const gatewayPoint = computed(() => {
-  const province = resolveGatewayProvince();
-  if (!province) {
-    return null;
-  }
-  return {
-    coord: province.center,
-    name: siteName.value,
-  };
-});
+const heroSlogan = computed(() => formatHeroSlogan(siteConfig.value.slogan));
 const isSignedIn = computed(() => Boolean(accessStore.accessToken));
 const consolePath = computed(() => {
   const homePath = String(
@@ -271,7 +271,6 @@ const quickStartActionLabel = computed(() =>
   isSignedIn.value ? '前往控制台' : '免费注册',
 );
 const { activeTheme, siteThemeVars } = usePublicSiteTheme();
-
 const trendItems = computed(() => {
   if (callTrend.value.length > 0) {
     return callTrend.value;
@@ -306,107 +305,28 @@ const realApiCards = computed<ApiDisplayCard[]>(() =>
   })),
 );
 
-const knownRegionMax = computed(() => {
-  return Math.max(
-    0,
-    ...regions.value
-      .filter((item) => item.code !== 'UNKNOWN' && item.code !== 'LOCAL')
-      .map((item) => Number(item.value || 0)),
-  );
-});
-const regionByMapName = computed(() => {
-  const map = new Map<string, HomeApi.RegionRankItem>();
-  regions.value.forEach((item) => {
-    if (item.code === 'UNKNOWN' || item.code === 'LOCAL') {
-      return;
-    }
-    const province = resolveRegionProvince(item);
-    if (!province) {
-      return;
-    }
-    map.set(province.name, item);
-  });
-  return map;
-});
-
-const mapScatterData = computed(() =>
-  regions.value
-    .filter((item) => item.code !== 'UNKNOWN' && item.code !== 'LOCAL')
-    .slice(0, 8)
-    .map((item) => {
-      const province = resolveRegionProvince(item);
-      if (!province) {
-        return null;
-      }
-      return {
-        name: province.name,
-        value: [...province.center, item.value],
-      };
-    })
-    .filter(Boolean),
-);
-
-const mapLineData = computed(() => {
-  const gateway = gatewayPoint.value;
-  if (!gateway) {
-    return [];
-  }
-  const lines: Array<{
-    coords: [[number, number], [number, number]];
-    fromName: string;
-    toName: string;
-    value: number;
-  }> = [];
-
-  regions.value
-    .filter((item) => item.code !== 'UNKNOWN' && item.code !== 'LOCAL')
-    .slice(0, 10)
-    .forEach((item) => {
-      const province = resolveRegionProvince(item);
-      if (!province || Number(item.value || 0) <= 0) {
-        return;
-      }
-
-      lines.push({
-        coords: [province.center, gateway.coord],
-        fromName: province.name,
-        toName: gateway.name,
-        value: item.value,
-      });
-    });
-
-  return lines;
-});
-
 const trendPanelStyle = computed(() => ({
   '--trend-sink': `${trendPanelSink.value}px`,
 }));
 
 let trendScrollFrame = 0;
-let regionMapFrame = 0;
 
 onMounted(() => {
   void loadOverview();
   void nextTick(() => {
     updateTrendPanelSink();
-    requestRegionMapRender();
     window.addEventListener('scroll', requestTrendPanelSinkUpdate, {
       passive: true,
     });
     window.addEventListener('resize', requestTrendPanelSinkUpdate);
-    window.addEventListener('resize', requestRegionMapRender);
   });
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', requestTrendPanelSinkUpdate);
   window.removeEventListener('resize', requestTrendPanelSinkUpdate);
-  window.removeEventListener('resize', requestRegionMapRender);
   if (trendScrollFrame) {
     window.cancelAnimationFrame(trendScrollFrame);
-  }
-  if (regionMapFrame) {
-    window.cancelAnimationFrame(regionMapFrame);
   }
 });
 
@@ -419,18 +339,9 @@ watch(
 );
 
 watch(
-  () => [regions.value, knownRegionMax.value, gatewayPoint.value],
-  () => {
-    requestRegionMapRender();
-  },
-  { deep: true },
-);
-
-watch(
   () => activeTheme.value.key,
   () => {
     void renderCallTrendChart();
-    requestRegionMapRender();
   },
 );
 
@@ -447,9 +358,10 @@ watch(
 async function loadOverview() {
   try {
     overview.value = await getHomeOverview();
+  } catch {
+    overview.value = emptyOverview;
   } finally {
     void renderCallTrendChart();
-    requestRegionMapRender();
     requestTrendPanelSinkUpdate();
   }
 }
@@ -461,16 +373,6 @@ function requestTrendPanelSinkUpdate() {
   trendScrollFrame = window.requestAnimationFrame(() => {
     trendScrollFrame = 0;
     updateTrendPanelSink();
-  });
-}
-
-function requestRegionMapRender() {
-  if (typeof window === 'undefined' || regionMapFrame) {
-    return;
-  }
-  regionMapFrame = window.requestAnimationFrame(() => {
-    regionMapFrame = 0;
-    void renderRegionMap();
   });
 }
 
@@ -517,6 +419,19 @@ function formatApiPrice(item: HomeApi.HotApiItem) {
   return '免费';
 }
 
+function formatHeroSlogan(value: null | string | undefined) {
+  const slogan = String(value || defaultSiteConfig.slogan)
+    .replace(/[，,、]+/g, ' · ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return slogan || defaultSiteConfig.slogan;
+}
+
+function formatNumber(value: number | string | undefined) {
+  const number = Number(value || 0);
+  return new Intl.NumberFormat('zh-CN').format(number);
+}
+
 async function renderCallTrendChart() {
   const theme = activeTheme.value;
   const labels = trendItems.value.map((item) => item.label);
@@ -545,7 +460,6 @@ async function renderCallTrendChart() {
           ]),
           opacity: 1,
         },
-        data: values,
         blur: {
           areaStyle: {
             opacity: 1,
@@ -557,6 +471,7 @@ async function renderCallTrendChart() {
             opacity: 1,
           },
         },
+        data: values,
         emphasis: {
           areaStyle: {
             opacity: 1,
@@ -664,289 +579,6 @@ async function renderCallTrendChart() {
   } as any);
 }
 
-async function renderRegionMap() {
-  const theme = activeTheme.value;
-  const maxValue = Math.max(1, knownRegionMax.value);
-  const heatColors = theme.mapColors;
-  const geoRegions = [...regionByMapName.value.entries()].map(
-    ([name, region]) => {
-      const ratio = Math.min(1, Number(region.value || 0) / maxValue);
-      const colorIndex = Math.min(
-        heatColors.length - 1,
-        Math.floor(ratio * heatColors.length),
-      );
-      return {
-        emphasis: {
-          itemStyle: {
-            areaColor:
-              theme.mapColors[theme.mapColors.length - 1] ?? theme.color,
-            borderColor: theme.color,
-            shadowBlur: 14,
-            shadowColor: `rgb(${theme.rgb} / 22%)`,
-          },
-        },
-        itemStyle: {
-          areaColor: heatColors[colorIndex],
-          borderColor: `rgb(${theme.rgb} / 22%)`,
-        },
-        name,
-      };
-    },
-  );
-  const mapTooltipFormatter = (params: any) => {
-    const mapName = normalizeMapRegionName(params?.name);
-    const region = regionByMapName.value.get(mapName);
-    const value = Array.isArray(params?.value)
-      ? Number(params.value[2] || 0)
-      : Number(region?.value ?? params?.value ?? 0);
-    return `<strong>${shortMapName(mapName)}</strong><br/><span>请求量：${formatNumber(value)}</span>`;
-  };
-
-  await renderChinaMap({
-    animation: true,
-    backgroundColor: 'transparent',
-    geo: {
-      aspectScale: 0.86,
-      bottom: 8,
-      itemStyle: {
-        areaColor: '#eef6ff',
-        borderColor: '#d6e3f2',
-        borderWidth: 1,
-      },
-      label: {
-        color: '#64748b',
-        fontSize: 10,
-        fontWeight: 700,
-        formatter: (params: any) => shortMapName(params.name),
-        show: true,
-      },
-      layoutCenter: ['50%', '56%'],
-      layoutSize: '116%',
-      map: CHINA_MAP_NAME,
-      roam: true,
-      scaleLimit: {
-        max: 3.2,
-        min: 0.9,
-      },
-      regions: geoRegions,
-      silent: false,
-      tooltip: {
-        formatter: mapTooltipFormatter,
-        show: true,
-      },
-    },
-    series: [
-      {
-        coordinateSystem: 'geo',
-        data: mapLineData.value,
-        effect: {
-          color: theme.color,
-          period: 4,
-          show: true,
-          symbol: 'arrow',
-          symbolSize: 6,
-          trailLength: 0.32,
-        },
-        lineStyle: {
-          color: theme.color,
-          curveness: 0.24,
-          opacity: 0.32,
-          width: 1,
-        },
-        progressive: 0,
-        type: 'lines',
-        zlevel: 3,
-      },
-      {
-        coordinateSystem: 'geo',
-        data: mapScatterData.value,
-        itemStyle: {
-          color: theme.color,
-          shadowBlur: 12,
-          shadowColor: `rgb(${theme.rgb} / 42%)`,
-        },
-        rippleEffect: {
-          brushType: 'stroke',
-          scale: 3,
-        },
-        symbolSize: (value: number[]) => {
-          if (!value?.[2] || knownRegionMax.value <= 0) {
-            return 0;
-          }
-          return 8 + (Number(value[2]) / maxValue) * 16;
-        },
-        type: 'effectScatter',
-        zlevel: 4,
-      },
-      {
-        coordinateSystem: 'geo',
-        data: gatewayPoint.value
-          ? [
-              {
-                name: gatewayPoint.value.name,
-                value: [...gatewayPoint.value.coord, maxValue],
-              },
-            ]
-          : [],
-        itemStyle: {
-          color: theme.accent,
-          shadowBlur: 18,
-          shadowColor: `rgb(${theme.rgb} / 45%)`,
-        },
-        rippleEffect: {
-          brushType: 'stroke',
-          scale: 4,
-        },
-        symbolSize: 10,
-        type: 'effectScatter',
-        zlevel: 5,
-      },
-    ],
-    tooltip: {
-      backgroundColor: 'rgb(255 255 255 / 96%)',
-      borderColor: '#d8e2f0',
-      borderWidth: 1,
-      className: 'home-map-tooltip',
-      confine: true,
-      formatter: mapTooltipFormatter,
-      padding: [10, 12],
-      textStyle: {
-        color: '#0f172a',
-        fontSize: 13,
-        fontWeight: 700,
-      },
-      trigger: 'item',
-      triggerOn: 'mousemove|click',
-    },
-  } as any);
-}
-
-function normalizeMapRegionName(name: string | undefined) {
-  const raw = String(name || '').trim();
-  const direct: Record<string, string> = {
-    上海: '上海市',
-    上海市: '上海市',
-    云南: '云南省',
-    云南省: '云南省',
-    内蒙古: '内蒙古自治区',
-    内蒙古自治区: '内蒙古自治区',
-    北京: '北京市',
-    北京市: '北京市',
-    台湾: '台湾省',
-    台湾省: '台湾省',
-    吉林: '吉林省',
-    吉林省: '吉林省',
-    四川: '四川省',
-    四川省: '四川省',
-    天津: '天津市',
-    天津市: '天津市',
-    宁夏: '宁夏回族自治区',
-    宁夏回族自治区: '宁夏回族自治区',
-    安徽: '安徽省',
-    安徽省: '安徽省',
-    山东: '山东省',
-    山东省: '山东省',
-    山西: '山西省',
-    山西省: '山西省',
-    广东: '广东省',
-    广东省: '广东省',
-    广西: '广西壮族自治区',
-    广西壮族自治区: '广西壮族自治区',
-    新疆: '新疆维吾尔自治区',
-    新疆维吾尔自治区: '新疆维吾尔自治区',
-    江苏: '江苏省',
-    江苏省: '江苏省',
-    江西: '江西省',
-    江西省: '江西省',
-    河北: '河北省',
-    河北省: '河北省',
-    河南: '河南省',
-    河南省: '河南省',
-    浙江: '浙江省',
-    浙江省: '浙江省',
-    海南: '海南省',
-    海南省: '海南省',
-    湖北: '湖北省',
-    湖北省: '湖北省',
-    湖南: '湖南省',
-    湖南省: '湖南省',
-    澳门: '澳门特别行政区',
-    澳门特别行政区: '澳门特别行政区',
-    甘肃: '甘肃省',
-    甘肃省: '甘肃省',
-    福建: '福建省',
-    福建省: '福建省',
-    西藏: '西藏自治区',
-    西藏自治区: '西藏自治区',
-    贵州: '贵州省',
-    贵州省: '贵州省',
-    辽宁: '辽宁省',
-    辽宁省: '辽宁省',
-    重庆: '重庆市',
-    重庆市: '重庆市',
-    陕西: '陕西省',
-    陕西省: '陕西省',
-    青海: '青海省',
-    青海省: '青海省',
-    香港: '香港特别行政区',
-    香港特别行政区: '香港特别行政区',
-    黑龙江: '黑龙江省',
-    黑龙江省: '黑龙江省',
-  };
-  return direct[raw] ?? raw;
-}
-
-function resolveGatewayProvince() {
-  const byCode = provinceFeatureByCode.get(
-    String(overview.value.gatewayProvinceCode || '').trim(),
-  );
-  if (byCode) {
-    return byCode;
-  }
-  const provinceName = normalizeMapRegionName(
-    overview.value.gatewayProvinceName,
-  );
-  const center = provinceCenterByName.get(provinceName);
-  if (!provinceName || !center) {
-    return null;
-  }
-  return {
-    center,
-    name: provinceName,
-  };
-}
-
-function resolveRegionProvince(item: HomeApi.RegionRankItem) {
-  const byCode = provinceFeatureByCode.get(String(item.code || '').trim());
-  if (byCode) {
-    return byCode;
-  }
-  const provinceName = normalizeMapRegionName(item.name);
-  const center = provinceCenterByName.get(provinceName);
-  if (!provinceName || !center) {
-    return null;
-  }
-  return {
-    center,
-    name: provinceName,
-  };
-}
-
-function shortMapName(name: string | undefined) {
-  return String(name || '')
-    .replace('特别行政区', '')
-    .replace('壮族自治区', '')
-    .replace('维吾尔自治区', '')
-    .replace('回族自治区', '')
-    .replace('自治区', '')
-    .replace(/[省市]$/, '');
-}
-
-function formatNumber(value: number | string | undefined) {
-  const number = Number(value || 0);
-  return new Intl.NumberFormat('zh-CN').format(number);
-}
-
 function formatDate(date: Date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -994,15 +626,17 @@ function compactNumber(value: number | string | undefined) {
           面向开发者的 API 服务与分发平台
         </div>
 
-        <h1>
-          稳定提供 API 服务网站
-          <span>清晰、稳定、可运营</span>
-        </h1>
+        <h1>稳定提供 API 服务网站</h1>
+
+        <div class="hero-slogan">
+          <IconifyIcon icon="lucide:sparkles" />
+          <span>{{ heroSlogan }}</span>
+        </div>
 
         <p>
           {{ siteName }} 提供统一的 API 列表、详情调试、Key
           管理、套餐购买、调用记录与计费入口，
-          让接口接入更快、管理更稳、对账更清楚。
+          让接口接入更快、调用更稳、用量更清楚。
         </p>
 
         <div class="hero-actions">
@@ -1029,7 +663,7 @@ function compactNumber(value: number | string | undefined) {
               <small>{{ compactNumber(item.callCount) }}</small>
             </RouterLink>
           </div>
-          <p v-else>暂无精选接口，请在后台接口管理中开启精选开关。</p>
+          <p v-else>暂无精选接口，请稍后查看接口市场。</p>
         </section>
       </div>
 
@@ -1057,77 +691,97 @@ function compactNumber(value: number | string | undefined) {
       </aside>
     </section>
 
-    <section id="apis" class="content-section">
+    <section id="quickstart" class="content-section access-guide-section">
       <div class="section-head">
-        <span>API MARKET</span>
-        <h2>精选接口能力</h2>
-        <p>只展示后台开启“精选接口”的真实接口，调用量来自接口调用日志。</p>
+        <span>接入流程</span>
+        <h2>四步完成接入</h2>
+        <p>先确认接口和权益，再创建 Key，最后接入生产调用。</p>
       </div>
 
-      <div v-if="realApiCards.length > 0" class="api-grid">
-        <article v-for="item in realApiCards" :key="item.id" class="api-card">
-          <span class="api-icon">
-            <img
-              v-if="item.avatarUrl"
-              :alt="String(item.name)"
-              :src="item.avatarUrl"
-            />
-            <IconifyIcon v-else :icon="item.icon" />
-          </span>
-          <div>
-            <h3>{{ item.name }}</h3>
-            <p>{{ item.desc }}</p>
+      <div class="integration-step-grid">
+        <article
+          v-for="(item, index) in integrationSteps"
+          :key="item.title"
+          class="integration-step-card"
+        >
+          <div class="integration-step-card__head">
+            <b>{{ index + 1 }}</b>
+            <span>
+              <IconifyIcon :icon="item.icon" />
+            </span>
           </div>
-          <div class="api-tags">
-            <span v-for="tag in item.tags" :key="tag">{{ tag }}</span>
-          </div>
-          <RouterLink
-            :to="{ path: apiMarketPath, query: { keyword: item.name } }"
-          >
-            查看详情
-            <IconifyIcon icon="lucide:arrow-right" />
-          </RouterLink>
+          <h3>{{ item.title }}</h3>
+          <p>{{ item.desc }}</p>
         </article>
-      </div>
-
-      <div v-else class="empty-card">
-        <IconifyIcon icon="lucide:database-zap" />
-        <span>暂无精选接口，请在后台接口管理中开启精选开关。</span>
       </div>
     </section>
 
-    <section id="region-map" class="content-section region-map-section">
-      <div class="section-head region-map-title">
-        <span>REGION MAP</span>
-        <h2>地区请求分布</h2>
+    <section id="key-auth" class="content-section key-auth-section">
+      <div class="section-head">
+        <span>Key 认证</span>
+        <h2>Key 认证规则</h2>
+        <p>
+          公开接口通过 Query 参数 key
+          完成认证，系统会继续校验账号、接口权限和来源 IP。
+        </p>
       </div>
 
-      <div class="simple-region-map-layout">
-        <section class="simple-map-card">
-          <div class="simple-card-head">
-            <div>
-              <span>MAP</span>
-              <h3>地区请求分布</h3>
-            </div>
-            <em>实时</em>
-          </div>
-          <div class="simple-map-visual" aria-label="中国地区 API 请求分布">
-            <EchartsUI
-              ref="chinaMapRef"
-              class="simple-map-chart"
-              height="100%"
-              width="100%"
+      <div class="auth-rule-grid">
+        <article
+          v-for="item in keyAuthRules"
+          :key="item.label"
+          class="auth-rule-card"
+          :class="{ 'auth-rule-card--warn': item.warn }"
+        >
+          <div>
+            <IconifyIcon
+              :icon="item.warn ? 'lucide:shield-alert' : 'lucide:shield-check'"
             />
+            <strong>{{ item.label }}</strong>
           </div>
-        </section>
+          <p>{{ item.desc }}</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="system-flow" class="content-section system-flow-section">
+      <div class="section-head">
+        <span>服务保障</span>
+        <h2>接入后也能看清每一次调用</h2>
+        <p>
+          围绕客户持续使用 API
+          的关键问题展示：权限是否清楚、费用是否透明、日志是否可查。
+        </p>
+      </div>
+
+      <div class="system-flow-list">
+        <article
+          v-for="(item, index) in systemFlowItems"
+          :key="item.title"
+          class="system-flow-item"
+        >
+          <div class="system-flow-item__head">
+            <span class="system-flow-item__meta">
+              <span class="system-flow-item__icon">
+                <IconifyIcon :icon="item.icon" />
+              </span>
+              <em>{{ item.label }}</em>
+            </span>
+            <b>{{ String(index + 1).padStart(2, '0') }}</b>
+          </div>
+          <div class="system-flow-item__body">
+            <h3>{{ item.title }}</h3>
+            <p>{{ item.desc }}</p>
+          </div>
+        </article>
       </div>
     </section>
 
     <section id="features" class="content-section">
       <div class="section-head">
-        <span>WHY NANFENGAPI</span>
-        <h2>为什么选择我们</h2>
-        <p>参考轻量 API 站点的高信息密度，同时保留计费系统需要的运营能力。</p>
+        <span>系统能力</span>
+        <h2>平台能力</h2>
+        <p>围绕接口查询、授权、计费和日志追踪，提供一套完整的 API 服务能力。</p>
       </div>
 
       <div class="feature-grid">
@@ -1152,7 +806,7 @@ function compactNumber(value: number | string | undefined) {
 
     <section class="content-section">
       <div class="section-head">
-        <span>SCENARIOS</span>
+        <span>场景覆盖</span>
         <h2>适用场景</h2>
         <p>
           同一套接口、Key、套餐、调用记录与计费能力，覆盖不同角色的使用方式。
@@ -1169,9 +823,9 @@ function compactNumber(value: number | string | undefined) {
       </div>
     </section>
 
-    <section id="quickstart" class="quickstart-section">
+    <section id="ready" class="quickstart-section">
       <div>
-        <span>READY</span>
+        <span>开始接入</span>
         <h2>准备好了就开始</h2>
         <p>从接口市场选择接口，进入详情调试，创建 Key 后复制示例接入。</p>
       </div>
@@ -1545,18 +1199,44 @@ function compactNumber(value: number | string | undefined) {
 }
 
 .hero-copy h1 {
-  max-width: 720px;
-  margin: 30px 0 18px;
-  font-size: clamp(42px, 4.1vw, 62px);
+  max-width: 680px;
+  margin: 28px 0 14px;
+  font-size: 46px;
   font-weight: 950;
-  line-height: 1.13;
+  line-height: 1.16;
   color: #0f172a;
+  text-wrap: balance;
   animation: fade-up 0.64s ease 0.2s both;
 }
 
-.hero-copy h1 span {
-  display: block;
+.hero-slogan {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  width: fit-content;
+  max-width: min(100%, 680px);
+  padding: 9px 14px;
+  margin: 0 0 16px;
+  font-size: 18px;
+  font-weight: 850;
+  line-height: 1.45;
   color: var(--home-primary);
+  background: rgb(var(--home-primary-rgb) / 8%);
+  border: 1px solid rgb(var(--home-primary-rgb) / 14%);
+  border-radius: 12px;
+  box-shadow: 0 14px 30px rgb(var(--home-primary-rgb) / 8%);
+  animation: fade-up 0.64s ease 0.24s both;
+}
+
+.hero-slogan svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  font-size: 18px;
+}
+
+.hero-slogan span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .hero-copy p {
@@ -1687,7 +1367,9 @@ function compactNumber(value: number | string | undefined) {
 
 .trend-card,
 .api-card,
+.auth-rule-card,
 .feature-card,
+.integration-step-card,
 .scenario-grid article,
 .empty-card {
   position: relative;
@@ -1721,7 +1403,9 @@ function compactNumber(value: number | string | undefined) {
 }
 
 .api-card:hover,
+.auth-rule-card:hover,
 .feature-card:hover,
+.integration-step-card:hover,
 .scenario-grid article:hover,
 .trend-card:hover {
   border-color: rgb(var(--home-primary-rgb) / 22%);
@@ -1797,6 +1481,117 @@ function compactNumber(value: number | string | undefined) {
   font-size: 30px;
 }
 
+.integration-step-grid,
+.auth-rule-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.integration-step-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.integration-step-card {
+  display: grid;
+  align-content: start;
+  min-height: 208px;
+  padding: 24px;
+  animation: fade-up 0.58s ease both;
+}
+
+.integration-step-card__head {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.integration-step-card b {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  font-size: 15px;
+  font-weight: 950;
+  color: #fff;
+  background: #0f172a;
+  border-radius: 10px;
+}
+
+.integration-step-card__head span {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  color: var(--home-primary);
+  background: var(--home-soft);
+  border: 1px solid rgb(var(--home-primary-rgb) / 12%);
+  border-radius: 12px;
+}
+
+.integration-step-card svg {
+  font-size: 30px;
+}
+
+.integration-step-card h3,
+.auth-rule-card strong {
+  margin: 24px 0 8px;
+  font-size: 18px;
+  font-weight: 950;
+  color: #0f172a;
+}
+
+.integration-step-card p,
+.auth-rule-card p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.75;
+  color: #64748b;
+}
+
+.auth-rule-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.auth-rule-card {
+  display: grid;
+  align-content: start;
+  min-height: 174px;
+  padding: 22px;
+  border-top: 4px solid var(--home-primary);
+  animation: fade-up 0.58s ease both;
+}
+
+.auth-rule-card--warn {
+  border-top-color: #f59e0b;
+}
+
+.auth-rule-card > div {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.auth-rule-card svg {
+  flex: 0 0 auto;
+  font-size: 22px;
+  color: var(--home-primary);
+}
+
+.auth-rule-card--warn svg,
+.auth-rule-card--warn strong {
+  color: #92400e;
+}
+
+.auth-rule-card strong {
+  margin: 0;
+}
+
+.auth-rule-card p {
+  margin-top: 18px;
+}
+
 .api-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1814,19 +1609,25 @@ function compactNumber(value: number | string | undefined) {
 }
 
 .api-card:nth-child(2),
+.auth-rule-card:nth-child(2),
 .feature-card:nth-child(2),
+.integration-step-card:nth-child(2),
 .scenario-grid article:nth-child(2) {
   animation-delay: 0.08s;
 }
 
 .api-card:nth-child(3),
+.auth-rule-card:nth-child(3),
 .feature-card:nth-child(3),
+.integration-step-card:nth-child(3),
 .scenario-grid article:nth-child(3) {
   animation-delay: 0.16s;
 }
 
 .api-card:nth-child(4),
+.auth-rule-card:nth-child(4),
 .feature-card:nth-child(4),
+.integration-step-card:nth-child(4),
 .scenario-grid article:nth-child(4) {
   animation-delay: 0.24s;
 }
@@ -1857,7 +1658,8 @@ function compactNumber(value: number | string | undefined) {
 
 .api-card h3,
 .feature-card h3,
-.scenario-grid h3 {
+.scenario-grid h3,
+.system-flow-item h3 {
   margin: 0;
   font-size: 18px;
   font-weight: 950;
@@ -1876,7 +1678,8 @@ function compactNumber(value: number | string | undefined) {
 
 .api-card p,
 .feature-card p,
-.scenario-grid p {
+.scenario-grid p,
+.system-flow-item p {
   margin: 8px 0 0;
   font-size: 14px;
   font-weight: 650;
@@ -1931,68 +1734,106 @@ function compactNumber(value: number | string | undefined) {
   color: #64748b;
 }
 
-.region-map-section {
-  width: min(1440px, calc(100% - 96px));
+.system-flow-section {
+  padding-top: 54px;
 }
 
-.simple-card-head {
+.system-flow-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.system-flow-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-height: 218px;
+  padding: 24px;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 96%), rgb(248 250 252 / 90%)),
+    radial-gradient(
+      circle at 88% 14%,
+      rgb(var(--home-primary-rgb) / 11%),
+      transparent 30%
+    );
+  border: 1px solid rgb(var(--home-primary-rgb) / 14%);
+  border-radius: 12px;
+  box-shadow: 0 18px 42px rgb(15 23 42 / 6%);
+  transition:
+    border-color 0.24s ease,
+    box-shadow 0.24s ease,
+    transform 0.24s ease;
+  animation: fade-up 0.58s ease both;
+}
+
+.system-flow-item:hover {
+  border-color: rgb(var(--home-primary-rgb) / 24%);
+  box-shadow: 0 22px 52px rgb(15 23 42 / 9%);
+  transform: translateY(-3px);
+}
+
+.system-flow-item__head {
   display: flex;
   gap: 14px;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
 }
 
-.simple-card-head span {
-  display: block;
-  font-size: 12px;
-  font-weight: 950;
-  color: var(--home-primary);
-  letter-spacing: 0.1em;
+.system-flow-item__meta {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
 }
 
-.simple-region-map-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  animation: fade-up 0.58s ease both;
-}
-
-.simple-map-card {
-  padding: 16px;
-  overflow: hidden;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-}
-
-.simple-card-head h3 {
-  margin: 5px 0 0;
-  font-size: 17px;
-  font-weight: 950;
-  color: #0f172a;
-}
-
-.simple-card-head em {
+.system-flow-item b {
   flex: 0 0 auto;
-  padding: 6px 10px;
+  padding: 6px 8px;
+  font-size: 13px;
+  font-weight: 950;
+  line-height: 1;
+  color: var(--home-primary);
+  background: var(--home-soft);
+  border: 1px solid rgb(var(--home-primary-rgb) / 10%);
+  border-radius: 8px;
+}
+
+.system-flow-item__icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  font-size: 22px;
+  color: var(--home-primary);
+  background: linear-gradient(145deg, #fff, var(--home-soft));
+  border: 1px solid rgb(var(--home-primary-rgb) / 12%);
+  border-radius: 11px;
+  box-shadow: 0 12px 24px rgb(var(--home-primary-rgb) / 8%);
+}
+
+.system-flow-item em {
+  display: inline-flex;
+  width: fit-content;
+  min-width: 0;
+  padding: 5px 9px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 12px;
   font-style: normal;
   font-weight: 900;
   color: var(--home-primary);
-  background: var(--home-soft);
-  border-radius: 999px;
+  white-space: nowrap;
+  background: rgb(var(--home-primary-rgb) / 7%);
+  border: 1px solid rgb(var(--home-primary-rgb) / 10%);
+  border-radius: 7px;
 }
 
-.simple-map-visual {
-  position: relative;
-  height: clamp(420px, 42vw, 620px);
-}
-
-.simple-map-chart {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+.system-flow-item__body {
+  min-width: 0;
 }
 
 .feature-grid {
@@ -2244,7 +2085,6 @@ function compactNumber(value: number | string | undefined) {
 @media (prefers-reduced-motion: reduce) {
   .home-page *,
   .home-page::before,
-  .trend-card::before,
   .quickstart-section::before {
     scroll-behavior: auto !important;
     transition-duration: 0.001ms !important;
@@ -2291,7 +2131,11 @@ function compactNumber(value: number | string | undefined) {
   }
 
   .hero-copy h1 {
-    font-size: 36px;
+    font-size: 34px;
+  }
+
+  .hero-slogan {
+    font-size: 16px;
   }
 
   .hero-actions,
@@ -2306,13 +2150,18 @@ function compactNumber(value: number | string | undefined) {
   }
 
   .api-grid,
+  .auth-rule-grid,
   .feature-grid,
-  .scenario-grid {
+  .integration-step-grid,
+  .scenario-grid,
+  .system-flow-list {
     grid-template-columns: 1fr;
   }
 
-  .simple-region-map-layout {
-    grid-template-columns: 1fr;
+  .auth-rule-grid,
+  .integration-step-grid,
+  .system-flow-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .trend-card {
@@ -2344,8 +2193,15 @@ function compactNumber(value: number | string | undefined) {
 
   .hero-copy h1 {
     margin: 22px 0 14px;
-    font-size: 32px;
+    font-size: 30px;
     line-height: 1.16;
+  }
+
+  .hero-slogan {
+    padding: 8px 12px;
+    margin-bottom: 14px;
+    font-size: 15px;
+    border-radius: 10px;
   }
 
   .hero-copy p {
@@ -2380,14 +2236,6 @@ function compactNumber(value: number | string | undefined) {
   .trend-chart {
     height: 232px !important;
     margin-top: 18px;
-  }
-
-  .region-map-section {
-    width: min(100% - 18px, 760px);
-  }
-
-  .simple-map-visual {
-    height: 360px;
   }
 
   .content-section {
@@ -2431,7 +2279,13 @@ function compactNumber(value: number | string | undefined) {
   }
 
   .hero-copy h1 {
-    font-size: 28px;
+    font-size: 26px;
+  }
+
+  .hero-slogan {
+    display: flex;
+    width: 100%;
+    font-size: 14px;
   }
 
   .hero-copy p {
@@ -2442,14 +2296,19 @@ function compactNumber(value: number | string | undefined) {
     height: 216px !important;
   }
 
-  .simple-map-visual {
-    height: 300px;
+  .api-card,
+  .auth-rule-card,
+  .feature-card,
+  .integration-step-card,
+  .scenario-grid article,
+  .system-flow-item {
+    padding: 18px;
   }
 
-  .api-card,
-  .feature-card,
-  .scenario-grid article {
-    padding: 18px;
+  .auth-rule-grid,
+  .integration-step-grid,
+  .system-flow-list {
+    grid-template-columns: 1fr;
   }
 }
 </style>

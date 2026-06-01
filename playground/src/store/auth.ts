@@ -116,6 +116,38 @@ export const useAuthStore = defineStore('auth', () => {
     return { userInfo };
   }
 
+  async function authLoginByAccessToken(accessToken: string) {
+    let userInfo: null | UserInfo = null;
+    try {
+      loginLoading.value = true;
+      if (accessToken) {
+        accessStore.setAccessToken(accessToken);
+
+        const [fetchUserInfoResult, accessCodes] = await Promise.all([
+          fetchUserInfo(),
+          getAccessCodesApi(),
+        ]);
+
+        userInfo = fetchUserInfoResult;
+        userStore.setUserInfo(userInfo);
+        accessStore.setAccessCodes(accessCodes);
+        accessStore.setLoginExpired(false);
+
+        await router.push(userInfo.homePath || preferences.app.defaultHomePath);
+
+        notification.success({
+          description: `${$t('authentication.loginSuccessDesc')}:${userInfo?.realName || 'QQ用户'}`,
+          duration: 3,
+          message: $t('authentication.loginSuccess'),
+        });
+      }
+    } finally {
+      loginLoading.value = false;
+    }
+
+    return { userInfo };
+  }
+
   const isLoggingOut = ref(false); // 正在 logout 标识, 防止 /logout 死循环.
 
   async function logout(redirect: boolean = true) {
@@ -157,6 +189,7 @@ export const useAuthStore = defineStore('auth', () => {
   return {
     $reset,
     authLogin,
+    authLoginByAccessToken,
     authRegister,
     fetchUserInfo,
     loginLoading,

@@ -8,7 +8,6 @@ import { Button, message } from 'ant-design-vue';
 import { useVbenForm, z } from '#/adapter/form';
 import {
   getRegisterEmailConfig,
-  getRegisterMobileConfig,
   testRegisterEmailConfig,
   updateRegisterEmailConfig,
 } from '#/api/system/register';
@@ -16,7 +15,6 @@ import { $t } from '#/locales';
 
 const emailLoading = ref(false);
 const emailTestLoading = ref(false);
-const mobileEnabled = ref<0 | 1>(0);
 
 const [EmailForm, emailFormApi] = useVbenForm({
   commonConfig: {
@@ -96,15 +94,6 @@ async function loadEmailConfig() {
   }
 }
 
-async function loadMobileEnabled() {
-  try {
-    const config = await getRegisterMobileConfig();
-    mobileEnabled.value = config.enabled ?? 0;
-  } catch {
-    mobileEnabled.value = 0;
-  }
-}
-
 async function onEmailTest() {
   const values = await emailFormApi.getValues();
   const testEmail = String(values.testEmail ?? '').trim();
@@ -133,10 +122,6 @@ async function onEmailSubmit() {
   emailLoading.value = true;
   try {
     const values = await emailFormApi.getValues();
-    if (values.enabled && mobileEnabled.value === 1) {
-      message.warning($t('system.register.emailMobileConflict'));
-      return;
-    }
     await updateRegisterEmailConfig({
       ...(values as any),
       enabled: values.enabled ? 1 : 0,
@@ -149,7 +134,6 @@ async function onEmailSubmit() {
 
 onMounted(() => {
   void loadEmailConfig();
-  void loadMobileEnabled();
 });
 </script>
 

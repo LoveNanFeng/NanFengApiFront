@@ -9,14 +9,14 @@ import { useAccessStore, useUserStore } from '@vben/stores';
 import { usePublicSiteTheme } from '#/composables/use-public-site-theme';
 import { useSiteBrand } from '#/site-brand';
 
-type PublicNavKey = 'home' | 'links' | 'market' | 'opensource' | 'donate';
+type PublicNavKey = 'donate' | 'home' | 'links' | 'market' | 'opensource';
 
 interface NavItem {
+  external?: boolean;
+  href?: string;
   key: PublicNavKey;
   label: string;
   to: string;
-  href?: string;
-  external?: boolean;
 }
 
 const props = withDefaults(
@@ -36,11 +36,15 @@ const navItems: NavItem[] = [
   { key: 'market', label: '接口市场', to: '/apilist' },
   { key: 'links', label: '友情链接', to: '/links' },
   { key: 'donate', label: '赞赏支持', to: '/donate' },
-  { key: 'opensource', label: '开源地址', to: '', href: 'https://github.com/LoveNanFeng/NanFengAPI', external: true },
+  {
+    key: 'opensource',
+    label: '开源地址',
+    to: '',
+    href: 'https://github.com/LoveNanFeng/NanFengAPI',
+    external: true,
+  },
 ];
-const mobileNavItems = computed(() =>
-  navItems,
-);
+const mobileNavItems = computed(() => navItems);
 
 const accessStore = useAccessStore();
 const userStore = useUserStore();
@@ -56,7 +60,9 @@ const isMobileMenuOpen = ref(false);
 const isThemeMenuOpen = ref(false);
 const themeSwitcherRef = ref<HTMLElement | null>(null);
 const consolePath = computed(() => {
-  const homePath = String(userStore.userInfo?.homePath || CONSOLE_FALLBACK_PATH).trim();
+  const homePath = String(
+    userStore.userInfo?.homePath || CONSOLE_FALLBACK_PATH,
+  ).trim();
   return homePath || CONSOLE_FALLBACK_PATH;
 });
 
@@ -112,7 +118,12 @@ onBeforeUnmount(() => {
 <template>
   <header ref="headerRef" class="site-public-header" :style="siteThemeVars">
     <RouterLink class="public-brand" to="/">
-      <img v-if="siteLogoUrl" class="public-brand-logo" :alt="siteName" :src="siteLogoUrl" />
+      <img
+        v-if="siteLogoUrl"
+        class="public-brand-logo"
+        :alt="siteName"
+        :src="siteLogoUrl"
+      />
       <span v-else class="public-brand-mark" aria-hidden="true"></span>
       <span>{{ siteName }}</span>
     </RouterLink>
@@ -125,12 +136,15 @@ onBeforeUnmount(() => {
           :href="item.href"
           rel="noopener noreferrer"
           target="_blank"
-        >{{ item.label }}</a>
+          >{{ item.label }}</a
+        >
         <RouterLink
           v-else
           :class="{ active: props.activeKey === item.key }"
           :to="item.to"
-        >{{ item.label }}</RouterLink>
+        >
+          {{ item.label }}
+        </RouterLink>
       </template>
     </nav>
 
@@ -164,7 +178,10 @@ onBeforeUnmount(() => {
             type="button"
             @click="handleThemeSelect(item.key)"
           >
-            <IconifyIcon v-if="item.key === activeTheme.key" icon="lucide:check" />
+            <IconifyIcon
+              v-if="item.key === activeTheme.key"
+              icon="lucide:check"
+            />
           </button>
         </div>
       </div>
@@ -174,8 +191,10 @@ onBeforeUnmount(() => {
         <span class="console-label-short">控制台</span>
       </RouterLink>
       <template v-else>
-        <RouterLink class="login-link" :to="LOGIN_PATH">登录</RouterLink>
-        <RouterLink class="register-link" :to="REGISTER_PATH">注册</RouterLink>
+        <RouterLink class="login-link" :to="LOGIN_PATH"> 登录 </RouterLink>
+        <RouterLink class="register-link" :to="REGISTER_PATH">
+          注册
+        </RouterLink>
       </template>
     </div>
 
@@ -199,13 +218,16 @@ onBeforeUnmount(() => {
             rel="noopener noreferrer"
             target="_blank"
             @click="closeMobileMenu"
-          >{{ item.label }}</a>
+            >{{ item.label }}</a
+          >
           <RouterLink
             v-else
             :class="{ active: props.activeKey === item.key }"
             :to="item.to"
             @click="closeMobileMenu"
-          >{{ item.label }}</RouterLink>
+          >
+            {{ item.label }}
+          </RouterLink>
         </template>
       </nav>
 
@@ -219,10 +241,18 @@ onBeforeUnmount(() => {
           控制台
         </RouterLink>
         <template v-else>
-          <RouterLink class="login-link" :to="LOGIN_PATH" @click="closeMobileMenu">
+          <RouterLink
+            class="login-link"
+            :to="LOGIN_PATH"
+            @click="closeMobileMenu"
+          >
             登录
           </RouterLink>
-          <RouterLink class="register-link" :to="REGISTER_PATH" @click="closeMobileMenu">
+          <RouterLink
+            class="register-link"
+            :to="REGISTER_PATH"
+            @click="closeMobileMenu"
+          >
             注册
           </RouterLink>
         </template>
@@ -239,25 +269,24 @@ onBeforeUnmount(() => {
   --home-soft: #eff6ff;
 
   position: fixed;
-  z-index: 50;
   top: 0;
+  right: 0;
+  left: 0;
+  z-index: 50;
+  display: grid;
+  grid-template-columns: 260px 1fr auto;
+  gap: 28px;
+  align-items: center;
+  height: 72px;
+  padding: 0 clamp(24px, 4vw, 64px);
   font-family:
-    'HarmonyOS Sans SC', 'MiSans', 'Microsoft YaHei UI', 'PingFang SC',
-    sans-serif;
+    'HarmonyOS Sans SC', MiSans, 'Microsoft YaHei UI', 'PingFang SC', sans-serif;
   font-size: 15px;
   font-weight: 400;
   line-height: 1.5;
   color: #0f172a;
-  right: 0;
-  left: 0;
-  display: grid;
-  height: 72px;
-  grid-template-columns: 260px 1fr auto;
-  align-items: center;
-  gap: 28px;
-  border-bottom: 1px solid #e2e8f0;
   background: rgb(255 255 255 / 92%);
-  padding: 0 clamp(24px, 4vw, 64px);
+  border-bottom: 1px solid #e2e8f0;
   backdrop-filter: blur(18px);
 }
 
@@ -274,20 +303,20 @@ onBeforeUnmount(() => {
 }
 
 .public-brand {
-  min-width: 0;
   gap: 12px;
-  color: #0f172a;
+  min-width: 0;
   font-size: 22px;
   font-weight: 900;
+  color: #0f172a;
   text-decoration: none;
 }
 
 .public-brand-logo {
+  flex: 0 0 auto;
   width: 56px;
   height: 48px;
-  flex: 0 0 auto;
-  border-radius: 10px;
   object-fit: contain;
+  border-radius: 10px;
 }
 
 .public-brand > span:last-child {
@@ -307,38 +336,46 @@ onBeforeUnmount(() => {
 .public-brand-mark::before {
   position: absolute;
   inset: 0;
-  border-radius: 12px;
+  content: '';
   background: linear-gradient(
     145deg,
     #22d3ee 0%,
     var(--home-primary) 58%,
     var(--home-accent) 100%
   );
-  clip-path: polygon(46% 3%, 60% 3%, 100% 96%, 75% 96%, 51% 43%, 26% 96%, 0 96%);
-  content: '';
+  border-radius: 12px;
+  clip-path: polygon(
+    46% 3%,
+    60% 3%,
+    100% 96%,
+    75% 96%,
+    51% 43%,
+    26% 96%,
+    0 96%
+  );
 }
 
 .public-brand-mark::after {
   position: absolute;
-  left: 17px;
   bottom: 5px;
+  left: 17px;
   width: 11px;
   height: 12px;
+  content: '';
   background: rgb(255 255 255 / 88%);
   clip-path: polygon(50% 0, 100% 100%, 0 100%);
-  content: '';
 }
 
 .site-nav {
-  justify-content: center;
   gap: clamp(18px, 3vw, 42px);
+  justify-content: center;
 }
 
 .site-nav a {
   position: relative;
-  color: #334155;
   font-size: 15px;
   font-weight: 800;
+  color: #334155;
   text-decoration: none;
 }
 
@@ -354,47 +391,47 @@ onBeforeUnmount(() => {
   bottom: -25px;
   left: 0;
   height: 3px;
-  border-radius: 999px;
-  background: var(--home-primary);
   content: '';
+  background: var(--home-primary);
+  border-radius: 999px;
 }
 
 .site-actions {
-  align-items: center;
   gap: 12px;
+  align-items: center;
 }
 
 .theme-switcher {
   display: inline-flex;
   align-items: center;
-  border-radius: 999px;
-  background: rgb(15 23 42 / 4%);
   padding: 7px 9px;
+  background: rgb(15 23 42 / 4%);
+  border-radius: 999px;
 }
 
 .theme-toggle {
   display: none;
-  align-items: center;
   gap: 4px;
-  border: 0;
-  background: transparent;
+  align-items: center;
+  padding: 0;
   color: #475569;
   cursor: pointer;
-  padding: 0;
+  background: transparent;
+  border: 0;
 }
 
 .theme-toggle span,
 .theme-options button {
   display: grid;
+  place-items: center;
   width: 22px;
   height: 22px;
-  place-items: center;
+  padding: 0;
+  font-size: 13px;
+  color: #fff;
+  background: var(--theme-color);
   border: 0;
   border-radius: 50%;
-  background: var(--theme-color);
-  color: #fff;
-  font-size: 13px;
-  padding: 0;
 }
 
 .theme-toggle span {
@@ -414,8 +451,8 @@ onBeforeUnmount(() => {
 
 .theme-options {
   display: inline-flex;
-  align-items: center;
   gap: 8px;
+  align-items: center;
 }
 
 .theme-options button {
@@ -433,14 +470,14 @@ onBeforeUnmount(() => {
 .register-link,
 .console-link {
   display: inline-flex;
-  min-width: 86px;
-  height: 42px;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  min-width: 86px;
+  height: 42px;
   font-size: 14px;
   font-weight: 850;
   text-decoration: none;
+  border-radius: 8px;
   transition:
     transform 0.2s ease,
     border-color 0.2s ease,
@@ -448,24 +485,24 @@ onBeforeUnmount(() => {
 }
 
 .login-link {
-  border: 1px solid #cbd5e1;
-  background: #fff;
   color: #0f172a;
+  background: #fff;
+  border: 1px solid #cbd5e1;
 }
 
 .register-link,
 .console-link {
-  border: 1px solid var(--home-primary);
-  background: var(--home-primary);
   color: #fff;
+  background: var(--home-primary);
+  border: 1px solid var(--home-primary);
   box-shadow: 0 14px 28px rgb(var(--home-primary-rgb) / 18%);
 }
 
 .login-link:hover,
 .register-link:hover,
 .console-link:hover {
-  transform: translateY(-2px);
   box-shadow: 0 16px 30px rgb(var(--home-primary-rgb) / 16%);
+  transform: translateY(-2px);
 }
 
 .console-label-short {
@@ -486,10 +523,10 @@ onBeforeUnmount(() => {
 @media (prefers-reduced-motion: reduce) {
   .site-public-header,
   .theme-options button.active {
+    scroll-behavior: auto !important;
     transition-duration: 0.001ms !important;
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
-    scroll-behavior: auto !important;
   }
 }
 
@@ -501,9 +538,9 @@ onBeforeUnmount(() => {
 
 @media (max-width: 960px) {
   .site-public-header {
-    height: auto;
     grid-template-columns: 1fr auto;
     gap: 16px;
+    height: auto;
     padding: 16px 20px;
   }
 
@@ -541,18 +578,18 @@ onBeforeUnmount(() => {
 
   .theme-switcher {
     position: relative;
-    background: transparent;
     padding: 0;
+    background: transparent;
   }
 
   .theme-toggle {
     display: inline-flex;
-    width: 48px;
-    height: 44px;
     align-items: center;
     justify-content: center;
-    border-radius: 12px;
+    width: 48px;
+    height: 44px;
     background: transparent;
+    border-radius: 12px;
     box-shadow: none;
   }
 
@@ -565,17 +602,17 @@ onBeforeUnmount(() => {
 
   .theme-options {
     position: absolute;
-    z-index: 2;
     top: calc(100% + 10px);
     right: 0;
+    z-index: 2;
     gap: 10px;
-    border: 1px solid #e2e8f0;
-    border-radius: 999px;
-    background: #fff;
-    box-shadow: 0 16px 36px rgb(15 23 42 / 10%);
-    opacity: 0;
     padding: 10px;
     pointer-events: none;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 999px;
+    box-shadow: 0 16px 36px rgb(15 23 42 / 10%);
+    opacity: 0;
     transform: translateY(-6px);
     transition:
       opacity 0.18s ease,
@@ -583,21 +620,21 @@ onBeforeUnmount(() => {
   }
 
   .theme-switcher.open .theme-options {
-    opacity: 1;
     pointer-events: auto;
+    opacity: 1;
     transform: translateY(0);
   }
 
   .mobile-menu-toggle {
     display: grid;
+    place-items: center;
     width: 44px;
     height: 44px;
-    place-items: center;
+    font-size: 25px;
+    color: #475569;
+    background: transparent;
     border: 0;
     border-radius: 10px;
-    background: transparent;
-    color: #475569;
-    font-size: 25px;
   }
 
   .mobile-menu-panel {
@@ -607,27 +644,27 @@ onBeforeUnmount(() => {
     left: 0;
     display: grid;
     gap: 18px;
-    overflow: hidden;
     max-height: 0;
-    border-bottom: 1px solid #e2e8f0;
-    background: rgb(255 255 255 / 98%);
-    opacity: 0;
     padding: 0 18px;
+    overflow: hidden;
     pointer-events: none;
+    background: rgb(255 255 255 / 98%);
+    border-bottom: 1px solid #e2e8f0;
+    opacity: 0;
+    backdrop-filter: blur(18px);
     transform: translateY(-8px);
     transition:
       max-height 0.24s ease,
       opacity 0.18s ease,
       padding 0.24s ease,
       transform 0.18s ease;
-    backdrop-filter: blur(18px);
   }
 
   .mobile-menu-panel.open {
     max-height: 420px;
-    opacity: 1;
     padding: 18px;
     pointer-events: auto;
+    opacity: 1;
     transform: translateY(0);
   }
 
@@ -638,12 +675,12 @@ onBeforeUnmount(() => {
   .mobile-site-nav a {
     position: relative;
     display: block;
-    border-bottom: 1px solid #f1f5f9;
-    color: #334155;
+    padding: 14px 0 14px 24px;
     font-size: 15px;
     font-weight: 800;
-    padding: 14px 0 14px 24px;
+    color: #334155;
     text-decoration: none;
+    border-bottom: 1px solid #f1f5f9;
   }
 
   .mobile-site-nav a::before {
@@ -652,9 +689,9 @@ onBeforeUnmount(() => {
     left: 0;
     width: 6px;
     height: 6px;
-    border-radius: 50%;
-    background: #cbd5e1;
     content: '';
+    background: #cbd5e1;
+    border-radius: 50%;
     transform: translateY(-50%);
   }
 
@@ -693,8 +730,8 @@ onBeforeUnmount(() => {
   }
 
   .public-brand-mark::after {
-    left: 13px;
     bottom: 4px;
+    left: 13px;
     width: 10px;
     height: 11px;
   }

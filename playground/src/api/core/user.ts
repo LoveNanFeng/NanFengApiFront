@@ -65,6 +65,19 @@ export interface UserWorkbenchStats {
   todayCalls: number;
 }
 
+export interface QqBindingStatus {
+  avatar?: string;
+  bindTime?: string;
+  bound: boolean;
+  enabled: boolean;
+  lastLoginTime?: string;
+  nickname?: string;
+}
+
+export interface QqBindingAuthorizeResult {
+  url: string;
+}
+
 export interface AdminWorkbenchOverview {
   apiEnabled: number;
   apiTotal: number;
@@ -186,6 +199,29 @@ export async function sendBindMobileCodeApi(mobile: string) {
  */
 export async function bindMobileApi(mobile: string, code: string) {
   return requestClient.put<UserInfo>('/user/bind-mobile', { mobile, code });
+}
+
+/**
+ * 获取QQ绑定状态
+ */
+export async function getQqBindingStatusApi() {
+  return requestClient.get<QqBindingStatus>('/user/qq-binding');
+}
+
+/**
+ * 创建QQ绑定授权地址
+ */
+export async function getQqBindingAuthorizeApi() {
+  return requestClient.get<QqBindingAuthorizeResult>(
+    '/user/qq-binding/authorize',
+  );
+}
+
+/**
+ * 解绑QQ
+ */
+export async function unbindQqApi() {
+  return requestClient.delete<boolean>('/user/qq-binding');
 }
 
 /**
