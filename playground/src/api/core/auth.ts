@@ -40,6 +40,14 @@ export namespace AuthApi {
     accessToken: string;
   }
 
+  export interface PasswordResetAccountResult {
+    maskedEmail: string;
+  }
+
+  export interface PasswordResetVerifyResult {
+    resetToken: string;
+  }
+
   export interface QqLoginPublicConfig {
     configured: boolean;
     enabled: boolean;
@@ -293,6 +301,53 @@ export async function sendRegisterMobileCodeApi(
   return requestClient.post<boolean>('/auth/register/mobile-code', {
     captchaId,
     mobile,
+  });
+}
+
+/**
+ * 校验找回密码账号并返回脱敏邮箱
+ */
+export async function checkPasswordResetAccountApi(account: string) {
+  return requestClient.post<AuthApi.PasswordResetAccountResult>(
+    '/auth/password-reset/account',
+    { account },
+  );
+}
+
+/**
+ * 发送找回密码邮箱验证码
+ */
+export async function sendPasswordResetEmailCodeApi(account: string) {
+  return requestClient.post<boolean>('/auth/password-reset/email-code', {
+    account,
+  });
+}
+
+/**
+ * 校验找回密码邮箱验证码
+ */
+export async function verifyPasswordResetCodeApi(
+  account: string,
+  code: string,
+) {
+  return requestClient.post<AuthApi.PasswordResetVerifyResult>(
+    '/auth/password-reset/verify',
+    { account, code },
+  );
+}
+
+/**
+ * 重置普通用户密码
+ */
+export async function resetPasswordApi(
+  resetToken: string,
+  password: string,
+  confirmPassword: string,
+) {
+  return requestClient.post<boolean>('/auth/password-reset', {
+    confirmPassword,
+    password,
+    resetToken,
   });
 }
 

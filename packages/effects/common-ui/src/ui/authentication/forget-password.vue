@@ -93,6 +93,7 @@ defineExpose({
         </slot>
       </template>
     </Title>
+    <slot></slot>
     <Form />
 
     <div>
@@ -100,6 +101,7 @@ defineExpose({
         :class="{
           'cursor-wait': loading,
         }"
+        :loading="loading"
         aria-label="submit"
         class="mt-2 w-full"
         @click="handleSubmit"
