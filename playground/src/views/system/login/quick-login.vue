@@ -116,13 +116,22 @@ onMounted(() => {
         </div>
 
         <div class="grid grid-cols-1 gap-5 xl:grid-cols-2">
-          <label class="config-item">
+          <label class="config-item config-item--switch">
             <span class="config-label">启用 QQ 快捷登录</span>
-            <Switch
-              v-model:checked="form.enabled"
-              checked-children="启用"
-              un-checked-children="禁用"
-            />
+            <span class="switch-control">
+              <Switch
+                v-model:checked="form.enabled"
+                class="compact-switch"
+                size="small"
+              />
+              <span class="switch-desc">
+                {{
+                  form.enabled
+                    ? '已启用，登录页会展示 QQ 快捷登录入口'
+                    : '未启用，登录页不会展示 QQ 快捷登录入口'
+                }}
+              </span>
+            </span>
           </label>
 
           <label class="config-item">
@@ -181,9 +190,30 @@ onMounted(() => {
   gap: 8px;
 }
 
+.config-item--switch {
+  justify-content: center;
+  min-height: 64px;
+}
+
 .config-label {
   font-size: 14px;
   font-weight: 600;
+}
+
+.switch-control {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  width: fit-content;
+}
+
+.switch-desc {
+  font-size: 13px;
+  color: hsl(var(--muted-foreground));
+}
+
+.compact-switch {
+  flex: 0 0 auto;
 }
 
 .config-tip {

@@ -15,7 +15,12 @@ import { VbenIconButton } from '@vben-core/shadcn-ui';
 
 import { message } from 'ant-design-vue';
 
-import { getCaptchaApi, getQqLoginUrlApi, verifyCaptchaApi } from '#/api';
+import {
+  getCaptchaApi,
+  getQqLoginPublicConfigApi,
+  getQqLoginUrlApi,
+  verifyCaptchaApi,
+} from '#/api';
 import { useAuthStore } from '#/store';
 
 defineOptions({ name: 'Login' });
@@ -29,6 +34,7 @@ const captchaId = ref('');
 const captcha = ref<AuthApi.CaptchaResult | null>(null);
 const captchaChecking = ref(false);
 const captchaVerified = ref(false);
+const qqLoginEnabled = ref(false);
 const qqLoginLoading = ref(false);
 
 async function loadCaptcha() {
@@ -134,6 +140,10 @@ async function onSubmit(params: Recordable<any>) {
 }
 
 async function onQqLogin() {
+  if (!qqLoginEnabled.value) {
+    message.warning('QQ快捷登录暂未启用');
+    return;
+  }
   if (qqLoginLoading.value) return;
   qqLoginLoading.value = true;
   try {
@@ -150,8 +160,18 @@ async function onQqLogin() {
   }
 }
 
+async function loadQqLoginConfig() {
+  try {
+    const config = await getQqLoginPublicConfigApi();
+    qqLoginEnabled.value = !!config.enabled;
+  } catch {
+    qqLoginEnabled.value = false;
+  }
+}
+
 onMounted(() => {
   loadCaptcha();
+  void loadQqLoginConfig();
   const qqError = String(route.query.qqError || '').trim();
   if (qqError) {
     message.error(qqError);
@@ -171,7 +191,7 @@ onMounted(() => {
     @submit="onSubmit"
   >
     <template #third-party-login>
-      <div class="mt-4">
+      <div v-if="qqLoginEnabled" class="mt-4">
         <div class="mb-3 flex items-center gap-3 text-xs text-muted-foreground">
           <span class="h-px flex-1 bg-border"></span>
           <span>快捷登录</span>
