@@ -3,6 +3,8 @@ import { onMounted, ref } from 'vue';
 
 import { useUserStore } from '@vben/stores';
 
+import { message } from 'ant-design-vue';
+
 import {
   bindEmailApi,
   bindMobileApi,
@@ -12,7 +14,6 @@ import {
   sendBindMobileCodeApi,
   updateProfileApi,
 } from '#/api';
-import { message } from 'ant-design-vue';
 
 const userStore = useUserStore();
 
@@ -44,8 +45,8 @@ const mobileSending = ref(false);
 const mobileCountdown = ref(0);
 const mobileVerifying = ref(false);
 
-let emailTimer: ReturnType<typeof setInterval> | null = null;
-let mobileTimer: ReturnType<typeof setInterval> | null = null;
+let emailTimer: null | ReturnType<typeof setInterval> = null;
+let mobileTimer: null | ReturnType<typeof setInterval> = null;
 
 function mapRoleLabel(role: string): string {
   if (role === 'admin') return '管理员';
@@ -121,7 +122,10 @@ async function handleVerifyEmail() {
   }
   emailVerifying.value = true;
   try {
-    const updated = await bindEmailApi(bindEmail.value.trim(), emailCode.value.trim());
+    const updated = await bindEmailApi(
+      bindEmail.value.trim(),
+      emailCode.value.trim(),
+    );
     userStore.setUserInfo(updated);
     email.value = bindEmail.value.trim();
     emailEditing.value = false;
@@ -172,7 +176,10 @@ async function handleVerifyMobile() {
   }
   mobileVerifying.value = true;
   try {
-    const updated = await bindMobileApi(bindMobile.value.trim(), mobileCode.value.trim());
+    const updated = await bindMobileApi(
+      bindMobile.value.trim(),
+      mobileCode.value.trim(),
+    );
     userStore.setUserInfo(updated);
     mobile.value = bindMobile.value.trim();
     mobileEditing.value = false;
@@ -264,7 +271,13 @@ onMounted(async () => {
             :disabled="emailSending || emailCountdown > 0"
             @click="handleSendEmailCode"
           >
-            {{ emailCountdown > 0 ? `${emailCountdown}s` : emailSending ? '发送中...' : '发送验证码' }}
+            {{
+              emailCountdown > 0
+                ? `${emailCountdown}s`
+                : emailSending
+                  ? '发送中...'
+                  : '发送验证码'
+            }}
           </button>
           <button
             class="rounded bg-green-500 px-3 py-1.5 text-sm text-white hover:bg-green-600 disabled:opacity-50"
@@ -314,7 +327,13 @@ onMounted(async () => {
             :disabled="mobileSending || mobileCountdown > 0"
             @click="handleSendMobileCode"
           >
-            {{ mobileCountdown > 0 ? `${mobileCountdown}s` : mobileSending ? '发送中...' : '发送验证码' }}
+            {{
+              mobileCountdown > 0
+                ? `${mobileCountdown}s`
+                : mobileSending
+                  ? '发送中...'
+                  : '发送验证码'
+            }}
           </button>
           <button
             class="rounded bg-green-500 px-3 py-1.5 text-sm text-white hover:bg-green-600 disabled:opacity-50"
