@@ -31,6 +31,7 @@ export namespace AuthApi {
 
   export interface RegisterConfig {
     emailRegisterEnabled: boolean;
+    emailServiceEnabled?: boolean;
     mobileRegisterEnabled: boolean;
     registerEnabled: boolean;
   }

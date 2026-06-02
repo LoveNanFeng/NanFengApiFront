@@ -185,9 +185,15 @@ async function handleVerifyMobile() {
 onMounted(async () => {
   const [data, config] = await Promise.all([
     getUserInfoApi(),
-    getRegisterConfigApi().catch(() => ({ emailRegisterEnabled: false, mobileRegisterEnabled: false })),
+    getRegisterConfigApi().catch(() => ({
+      emailRegisterEnabled: false,
+      emailServiceEnabled: false,
+      mobileRegisterEnabled: false,
+    })),
   ]);
-  emailChannelEnabled.value = !!(config as any).emailRegisterEnabled;
+  emailChannelEnabled.value = !!(
+    (config as any).emailServiceEnabled ?? (config as any).emailRegisterEnabled
+  );
   mobileChannelEnabled.value = !!(config as any).mobileRegisterEnabled;
   loadData(data);
 });

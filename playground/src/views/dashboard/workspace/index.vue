@@ -40,6 +40,7 @@ import {
   Tag,
 } from 'ant-design-vue';
 
+import { getRegisterConfigApi } from '#/api/core/auth';
 import {
   getAdminWorkbenchStatsApi,
   getUserWorkbenchStatsApi,
@@ -181,6 +182,7 @@ function defaultAdminStats(): AdminWorkbenchStats {
 const userStats = ref<UserWorkbenchStats>(defaultUserStats());
 const adminStats = ref<AdminWorkbenchStats>(defaultAdminStats());
 const adminStatsLoading = ref(false);
+const emailServiceEnabled = ref(false);
 const packageDetailTab = ref<PackageDetailTab>('global');
 const [PackageDetailDrawer, packageDetailDrawerApi] = useVbenDrawer({
   cancelText: '关闭',
@@ -397,7 +399,8 @@ const hasBoundEmail = computed(() =>
   Boolean(String(userStore.userInfo?.email ?? '').trim()),
 );
 const shouldShowBindEmailWarning = computed(
-  () => isUserWorkspace.value && !hasBoundEmail.value,
+  () =>
+    isUserWorkspace.value && emailServiceEnabled.value && !hasBoundEmail.value,
 );
 
 const memberPackage = computed(() => userStats.value.memberPackage ?? null);
@@ -964,6 +967,18 @@ async function refreshWorkbenchStats() {
   renderCallTrendChart();
 }
 
+async function loadRegisterConfig() {
+  try {
+    const config = await getRegisterConfigApi();
+    emailServiceEnabled.value = !!(
+      config.emailServiceEnabled ?? config.emailRegisterEnabled
+    );
+  } catch (error) {
+    emailServiceEnabled.value = false;
+    console.error('Failed to load register config:', error);
+  }
+}
+
 async function refreshAdminWorkbenchStats() {
   adminStatsLoading.value = true;
   try {
@@ -1335,6 +1350,7 @@ onMounted(async () => {
     return;
   }
   renderCallTrendChart();
+  await loadRegisterConfig();
   try {
     await refreshWorkbenchStats();
   } catch (error) {
