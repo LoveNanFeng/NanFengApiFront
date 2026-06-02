@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { Recordable } from '@vben/types';
+
 import { computed, ref } from 'vue';
 
 import { ProfileNotificationSetting } from '@vben/common-ui';
@@ -37,8 +39,12 @@ const formSchema = computed(() => {
   ];
 });
 
-function handleChange(values: { fieldName: string; value: boolean }) {
-  prefs.value = { ...prefs.value, [values.fieldName]: values.value };
+function handleChange(values: Recordable<any>) {
+  const fieldName = String(values.fieldName ?? '');
+  if (!fieldName) {
+    return;
+  }
+  prefs.value = { ...prefs.value, [fieldName]: Boolean(values.value) };
   savePrefs(prefs.value);
 }
 </script>

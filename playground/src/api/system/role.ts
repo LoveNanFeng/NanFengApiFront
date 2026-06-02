@@ -12,6 +12,14 @@ export namespace SystemRoleApi {
     roleKey: string;
     status: 0 | 1;
   }
+
+  export interface SaveSystemRole {
+    name?: string;
+    permissions?: Array<number | string>;
+    remark?: string;
+    roleKey?: string;
+    status?: 0 | 1;
+  }
 }
 
 /**
@@ -28,7 +36,7 @@ async function getRoleList(params: Recordable<any>) {
  * 创建角色
  * @param data 角色数据
  */
-async function createRole(data: Omit<SystemRoleApi.SystemRole, 'id'>) {
+async function createRole(data: SystemRoleApi.SaveSystemRole) {
   return requestClient.post('/system/role', data);
 }
 
@@ -40,7 +48,7 @@ async function createRole(data: Omit<SystemRoleApi.SystemRole, 'id'>) {
  */
 async function updateRole(
   id: number | string,
-  data: Omit<SystemRoleApi.SystemRole, 'id'>,
+  data: SystemRoleApi.SaveSystemRole,
 ) {
   return requestClient.put(`/system/role/${id}`, data);
 }

@@ -8,7 +8,7 @@ import { LOGIN_PATH } from '@vben/constants';
 import { IconifyIcon } from '@vben/icons';
 import { useAccessStore } from '@vben/stores';
 
-import { Modal, message } from 'ant-design-vue';
+import { message, Modal } from 'ant-design-vue';
 
 import {
   applyFriendLink,
@@ -125,7 +125,7 @@ async function submitApply() {
   submitting.value = true;
   try {
     await applyFriendLink({
-      backlinkUrl: applyForm.backlinkUrl.trim(),
+      backlinkUrl: applyForm.backlinkUrl?.trim() || undefined,
       contactEmail: '',
       contactName: '',
       contactQq: '',
@@ -206,12 +206,20 @@ function firstText(value?: string) {
           <strong>想和我们交换友情链接？</strong>
           <button
             class="apply-button"
-            :class="{ 'apply-button--disabled': !applyEnabled || hasSubmittedApply }"
+            :class="{
+              'apply-button--disabled': !applyEnabled || hasSubmittedApply,
+            }"
             type="button"
             @click="openApplyModal"
           >
             <IconifyIcon icon="lucide:plus" />
-            {{ hasSubmittedApply ? '您已提交过友链暂时无法提交' : applyEnabled ? '申请友链' : '申请暂未开放' }}
+            {{
+              hasSubmittedApply
+                ? '您已提交过友链暂时无法提交'
+                : applyEnabled
+                  ? '申请友链'
+                  : '申请暂未开放'
+            }}
           </button>
         </div>
       </section>
@@ -229,15 +237,25 @@ function firstText(value?: string) {
       <div class="apply-form">
         <label>
           <span>网站名称 <b>*</b></span>
-          <input v-model="applyForm.siteName" maxlength="80" placeholder="请输入您的网站名称" />
+          <input
+            v-model="applyForm.siteName"
+            maxlength="80"
+            placeholder="请输入您的网站名称"
+          />
         </label>
         <label>
           <span>网站地址 <b>*</b></span>
-          <input v-model="applyForm.siteUrl" placeholder="https://example.com" />
+          <input
+            v-model="applyForm.siteUrl"
+            placeholder="https://example.com"
+          />
         </label>
         <label class="apply-form__full">
           <span>网站 Logo</span>
-          <input v-model="applyForm.logoUrl" placeholder="https://example.com/logo.png 或 /favicon.ico" />
+          <input
+            v-model="applyForm.logoUrl"
+            placeholder="https://example.com/logo.png 或 /favicon.ico"
+          />
         </label>
         <label class="apply-form__full">
           <span>网站描述</span>
@@ -250,7 +268,10 @@ function firstText(value?: string) {
         </label>
         <label class="apply-form__full">
           <span>已放置我方链接的页面</span>
-          <input v-model="applyForm.backlinkUrl" placeholder="填写贵站已添加本站链接的页面地址（可选）" />
+          <input
+            v-model="applyForm.backlinkUrl"
+            placeholder="填写贵站已添加本站链接的页面地址（可选）"
+          />
         </label>
       </div>
     </Modal>
@@ -262,12 +283,15 @@ function firstText(value?: string) {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  color: #0f172a;
   background:
     linear-gradient(rgb(219 234 254 / 36%) 1px, transparent 1px),
     linear-gradient(90deg, rgb(219 234 254 / 36%) 1px, transparent 1px),
     linear-gradient(180deg, #f8fbff 0%, #f5f7fb 100%);
-  background-size: 96px 96px, 96px 96px, auto;
-  color: #0f172a;
+  background-size:
+    96px 96px,
+    96px 96px,
+    auto;
 }
 
 .links-page main {
@@ -277,23 +301,23 @@ function firstText(value?: string) {
 
 .links-hero {
   display: grid;
-  min-height: 220px;
   place-items: center;
-  text-align: center;
+  min-height: 220px;
   padding-top: 10px;
+  text-align: center;
 }
 
 .links-pill {
   display: inline-flex;
-  align-items: center;
   gap: 8px;
-  border: 1px solid rgb(var(--home-primary-rgb) / 14%);
-  border-radius: 999px;
-  background: rgb(var(--home-primary-rgb) / 8%);
-  color: var(--home-primary);
+  align-items: center;
+  padding: 7px 12px;
   font-size: 12px;
   font-weight: 900;
-  padding: 7px 12px;
+  color: var(--home-primary);
+  background: rgb(var(--home-primary-rgb) / 8%);
+  border: 1px solid rgb(var(--home-primary-rgb) / 14%);
+  border-radius: 999px;
 }
 
 .links-hero h1 {
@@ -305,24 +329,24 @@ function firstText(value?: string) {
 
 .links-hero p {
   margin: 0;
-  color: #64748b;
   font-size: 15px;
   font-weight: 700;
+  color: #64748b;
 }
 
 .links-shell {
   display: flex;
-  width: min(1180px, calc(100% - 80px));
   flex-direction: column;
   gap: 24px;
+  width: min(1180px, calc(100% - 80px));
   margin: 0 auto;
 }
 
 .links-main-card,
 .links-apply-strip {
+  background: rgb(255 255 255 / 86%);
   border: 1px solid #e2e8f0;
   border-radius: 14px;
-  background: rgb(255 255 255 / 86%);
   box-shadow: 0 16px 42px rgb(15 23 42 / 6%);
   backdrop-filter: blur(12px);
 }
@@ -334,16 +358,16 @@ function firstText(value?: string) {
 .links-card-head,
 .apply-title {
   display: flex;
+  gap: 16px;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
 }
 
 .links-card-head span {
   display: block;
-  color: var(--home-primary);
   font-size: 12px;
   font-weight: 950;
+  color: var(--home-primary);
   letter-spacing: 0.12em;
 }
 
@@ -355,13 +379,13 @@ function firstText(value?: string) {
 }
 
 .links-card-head em {
-  border-radius: 999px;
-  background: #f1f5f9;
-  color: #334155;
+  padding: 6px 12px;
   font-size: 13px;
   font-style: normal;
   font-weight: 900;
-  padding: 6px 12px;
+  color: #334155;
+  background: #f1f5f9;
+  border-radius: 999px;
 }
 
 .links-grid {
@@ -373,16 +397,16 @@ function firstText(value?: string) {
 
 .link-card {
   display: grid;
-  min-height: 76px;
   grid-template-columns: 44px minmax(0, 1fr) auto;
-  align-items: center;
   gap: 12px;
+  align-items: center;
+  min-height: 76px;
+  padding: 12px 14px;
+  color: inherit;
+  text-decoration: none;
+  background: rgb(255 255 255 / 94%);
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  background: rgb(255 255 255 / 94%);
-  color: inherit;
-  padding: 12px 14px;
-  text-decoration: none;
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease,
@@ -398,16 +422,16 @@ function firstText(value?: string) {
 .link-card img,
 .link-card > span {
   display: grid;
+  place-items: center;
   width: 44px;
   height: 44px;
-  place-items: center;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  background: #f1f5f9;
-  color: var(--home-primary);
   font-size: 20px;
   font-weight: 950;
+  color: var(--home-primary);
   object-fit: cover;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
 }
 
 .link-card strong {
@@ -417,46 +441,46 @@ function firstText(value?: string) {
 }
 
 .link-card p {
-  overflow: hidden;
   margin: 4px 0 0;
-  color: #64748b;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 12px;
   font-weight: 700;
-  text-overflow: ellipsis;
+  color: #64748b;
   white-space: nowrap;
 }
 
 .link-card svg {
-  color: #94a3b8;
   font-size: 16px;
+  color: #94a3b8;
 }
 
 .links-empty {
   display: grid;
-  min-height: 180px;
+  gap: 10px;
   place-items: center;
   align-content: center;
-  gap: 10px;
+  min-height: 180px;
   color: #64748b;
   text-align: center;
 }
 
 .links-empty svg {
-  color: var(--home-primary);
   font-size: 30px;
+  color: var(--home-primary);
 }
 
 .links-empty strong {
-  color: #0f172a;
   font-size: 16px;
+  color: #0f172a;
 }
 
 .links-apply-strip {
   display: flex;
-  min-height: 82px;
+  gap: 18px;
   align-items: center;
   justify-content: center;
-  gap: 18px;
+  min-height: 82px;
   padding: 18px 22px;
 }
 
@@ -467,21 +491,21 @@ function firstText(value?: string) {
 
 .apply-button {
   display: inline-flex;
-  height: 40px;
+  gap: 9px;
   align-items: center;
   justify-content: center;
-  gap: 9px;
-  border: 0;
-  border-radius: 10px;
-  background: var(--home-primary);
+  height: 40px;
+  padding: 0 20px;
+  font-size: 13px;
+  font-weight: 950;
   color: #fff;
   cursor: pointer;
-  font-weight: 950;
+  background: var(--home-primary);
+  border: 0;
+  border-radius: 10px;
   transition:
     opacity 0.2s ease,
     transform 0.2s ease;
-  font-size: 13px;
-  padding: 0 20px;
 }
 
 .apply-button:not(.apply-button--disabled):hover {
@@ -509,8 +533,8 @@ function firstText(value?: string) {
 }
 
 .apply-form span {
-  color: #475569;
   font-weight: 800;
+  color: #475569;
 }
 
 .apply-form b {
@@ -520,10 +544,10 @@ function firstText(value?: string) {
 .apply-form input,
 .apply-form textarea {
   width: 100%;
+  padding: 10px 12px;
+  outline: none;
   border: 1px solid #dbe3ef;
   border-radius: 8px;
-  outline: none;
-  padding: 10px 12px;
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease;
@@ -561,8 +585,8 @@ function firstText(value?: string) {
 
   .links-main-card,
   .links-apply-strip {
-    border-radius: 16px;
     padding: 18px;
+    border-radius: 16px;
   }
 
   .links-grid,
@@ -571,8 +595,8 @@ function firstText(value?: string) {
   }
 
   .links-apply-strip {
-    align-items: stretch;
     flex-direction: column;
+    align-items: stretch;
     text-align: center;
   }
 

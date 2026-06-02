@@ -4,43 +4,44 @@ import { useRoute, useRouter } from 'vue-router';
 
 import { Page } from '@vben/common-ui';
 
+import { Button, Card, Empty, Spin, Tag } from 'ant-design-vue';
+
 import { getMarketApiDetail, getMarketApiTestKey } from '#/api';
-import { Button, Card, Empty, message, Spin, Tag } from 'ant-design-vue';
 
 interface ApiDetail {
-  id: number;
   apiCode: string;
-  name: string;
+  auth: { description: string; location: string; name: string; type: string };
   avatarUrl: string;
-  description: string;
-  requestMethod: string;
-  preferredMethod: string;
-  price: number;
-  pointPrice: number;
-  priceLabel: string;
-  category: string;
   callCount: number;
+  callTrend7d: TrendItem[];
+  category: string;
+  description: string;
   gatewayPath: string;
   gatewayUrlTemplate: string;
+  id: number;
+  name: string;
+  notice: string;
   parameters: ParameterItem[];
-  responseType: string;
+  pointPrice: number;
+  preferredMethod: string;
+  price: number;
+  priceLabel: string;
+  pricing: { description: string; label: string };
+  requestMethod: string;
   responseExample: string;
   responseFields: any[];
+  responseType: string;
   statusCodes: StatusCodeItem[];
-  notice: string;
-  pricing: { label: string; description: string };
-  callTrend7d: TrendItem[];
-  auth: { type: string; location: string; name: string; description: string };
   templateParameters: string[];
 }
 
 interface ParameterItem {
-  name: string;
-  type: string;
-  location: string;
-  required: boolean;
   description: string;
   exampleValue?: string;
+  location: string;
+  name: string;
+  required: boolean;
+  type: string;
 }
 
 interface StatusCodeItem {
@@ -86,7 +87,9 @@ async function loadTestKey() {
   try {
     const res = (await getMarketApiTestKey(detail.value.id)) as any;
     if (res?.hasKey) testKey.value = res.secretKey || '';
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 function methodColor(m: string): string {
@@ -96,8 +99,8 @@ function methodColor(m: string): string {
 }
 
 function compactNumber(n: number): string {
-  if (n >= 10_000) return (n / 10_000).toFixed(1) + '万';
-  if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
+  if (n >= 10_000) return `${(n / 10_000).toFixed(1)}万`;
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
   return String(n);
 }
 
@@ -127,8 +130,8 @@ async function handleTest() {
     } catch {
       testResult.value = text;
     }
-  } catch (e: any) {
-    testResult.value = `请求失败: ${e.message}`;
+  } catch (error: any) {
+    testResult.value = `请求失败: ${error.message}`;
     testStatus.value = 0;
   } finally {
     testLoading.value = false;
@@ -139,7 +142,12 @@ function goBack() {
   router.push({ name: 'InterfaceMarket' });
 }
 
-watch(() => route.params.id, () => { if (route.params.id) loadDetail(); });
+watch(
+  () => route.params.id,
+  () => {
+    if (route.params.id) loadDetail();
+  },
+);
 onMounted(async () => {
   await loadDetail();
   await loadTestKey();
@@ -157,8 +165,13 @@ onMounted(async () => {
           <div class="flex items-start gap-4">
             <div class="flex-1">
               <div class="mb-2 flex items-center gap-2">
-                <Tag :color="methodColor(detail.requestMethod)">{{ detail.requestMethod }}</Tag>
-                <span v-if="detail.preferredMethod" class="text-xs text-gray-400">
+                <Tag :color="methodColor(detail.requestMethod)">
+                  {{ detail.requestMethod }}
+                </Tag>
+                <span
+                  v-if="detail.preferredMethod"
+                  class="text-xs text-gray-400"
+                >
                   推荐 {{ detail.preferredMethod }}
                 </span>
                 <Tag :color="detail.priceLabel === '免费' ? 'green' : 'orange'">
@@ -179,13 +192,17 @@ onMounted(async () => {
           <div class="rounded bg-gray-50 p-3 font-mono text-sm">
             {{ detail.gatewayUrlTemplate }}
           </div>
-          <p class="mt-2 text-sm text-gray-500">{{ detail.auth?.description }}</p>
+          <p class="mt-2 text-sm text-gray-500">
+            {{ detail.auth?.description }}
+          </p>
         </Card>
 
         <!-- pricing -->
         <Card title="计费说明" class="mb-4">
           <p>{{ detail.pricing?.description }}</p>
-          <p class="mt-1 text-sm text-gray-500">计费顺序：会员套餐 → 接口套餐 → 点数 → 余额</p>
+          <p class="mt-1 text-sm text-gray-500">
+            计费顺序：会员套餐 → 接口套餐 → 点数 → 余额
+          </p>
         </Card>
 
         <!-- request params -->
@@ -206,7 +223,9 @@ onMounted(async () => {
                 <td class="py-2">{{ p.location }}</td>
                 <td class="py-2">{{ p.type }}</td>
                 <td class="py-2">
-                  <Tag :color="p.required ? 'red' : 'default'">{{ p.required ? '是' : '否' }}</Tag>
+                  <Tag :color="p.required ? 'red' : 'default'">
+                    {{ p.required ? '是' : '否' }}
+                  </Tag>
                 </td>
                 <td class="py-2 text-gray-500">{{ p.description }}</td>
               </tr>
@@ -216,8 +235,16 @@ onMounted(async () => {
 
         <!-- status codes -->
         <Card v-if="detail.statusCodes?.length" title="状态码" class="mb-4">
-          <div v-for="sc in detail.statusCodes" :key="sc.code" class="mb-1 text-sm">
-            <Tag :color="sc.code === 200 ? 'green' : sc.code >= 400 ? 'red' : 'orange'">
+          <div
+            v-for="sc in detail.statusCodes"
+            :key="sc.code"
+            class="mb-1 text-sm"
+          >
+            <Tag
+              :color="
+                sc.code === 200 ? 'green' : sc.code >= 400 ? 'red' : 'orange'
+              "
+            >
               {{ sc.code }}
             </Tag>
             <span class="text-gray-500">{{ sc.description }}</span>
@@ -226,7 +253,9 @@ onMounted(async () => {
 
         <!-- response example -->
         <Card v-if="detail.responseExample" title="返回示例" class="mb-4">
-          <pre class="max-h-96 overflow-auto rounded bg-gray-900 p-4 text-xs text-green-400">{{ detail.responseExample }}</pre>
+          <pre
+            class="max-h-96 overflow-auto rounded bg-gray-900 p-4 text-xs text-green-400"
+            >{{ detail.responseExample }}</pre>
         </Card>
 
         <!-- online test -->
@@ -236,7 +265,11 @@ onMounted(async () => {
             <Tag :color="methodColor(testMethod)">{{ testMethod }}</Tag>
           </div>
           <div v-if="detail.templateParameters?.length" class="mb-3 space-y-2">
-            <div v-for="p in detail.templateParameters" :key="p" class="flex items-center gap-2">
+            <div
+              v-for="p in detail.templateParameters"
+              :key="p"
+              class="flex items-center gap-2"
+            >
               <span class="w-24 text-sm text-gray-500">{{ p }}：</span>
               <input
                 v-model="testParams[p]"
@@ -245,12 +278,16 @@ onMounted(async () => {
               />
             </div>
           </div>
-          <Button type="primary" :loading="testLoading" @click="handleTest">发送请求</Button>
+          <Button type="primary" :loading="testLoading" @click="handleTest">
+            发送请求
+          </Button>
           <div v-if="testResult" class="mt-3">
             <div class="mb-1 text-sm text-gray-500">
               状态: {{ testStatus }} | 耗时: {{ testElapsed }}ms
             </div>
-            <pre class="max-h-96 overflow-auto rounded bg-gray-900 p-4 text-xs text-green-400">{{ testResult }}</pre>
+            <pre
+              class="max-h-96 overflow-auto rounded bg-gray-900 p-4 text-xs text-green-400"
+              >{{ testResult }}</pre>
           </div>
         </Card>
 

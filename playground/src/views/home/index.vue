@@ -198,14 +198,17 @@ const keyAuthRules = [
   {
     desc: '所有公开接口都需要在 Query 中携带 key，例如 ?key=YOUR_API_KEY。',
     label: '认证位置',
+    warn: false,
   },
   {
     desc: 'Key 需要属于启用状态的账号，且必须有该接口的调用权限。',
     label: '账号状态',
+    warn: false,
   },
   {
     desc: '如果开启了 IP 白名单，调用来源 IP 必须在白名单范围内。',
     label: '访问来源',
+    warn: false,
   },
   {
     desc: '不要把 Key 写进前端页面或小程序源码，正式业务建议从服务端转发调用。',

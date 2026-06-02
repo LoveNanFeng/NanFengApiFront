@@ -76,11 +76,6 @@ export function useGridFormSchema(): VbenFormSchema[] {
       label: $t('system.role.status'),
     },
     {
-      component: 'Input',
-      fieldName: 'remark',
-      label: $t('system.role.remark'),
-    },
-    {
       component: 'RangePicker',
       fieldName: 'createTime',
       label: $t('system.role.createTime'),
