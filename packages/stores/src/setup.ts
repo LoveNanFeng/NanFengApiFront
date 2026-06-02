@@ -43,9 +43,13 @@ export async function initStores(app: App, options: InitStoreOptions) {
   const { createPersistedState } = await import('pinia-plugin-persistedstate');
   pinia = createPinia();
   const { namespace } = options;
+  const secureKey = import.meta.env.VITE_APP_STORE_SECURE_KEY;
+  if (!import.meta.env.DEV && !secureKey) {
+    throw new Error('VITE_APP_STORE_SECURE_KEY is required in production');
+  }
   const ls = new SecureLSConstructor({
     encodingType: 'aes',
-    encryptionSecret: import.meta.env.VITE_APP_STORE_SECURE_KEY,
+    encryptionSecret: secureKey,
     isCompression: true,
     metaKey: `${namespace}-secure-meta`,
   });

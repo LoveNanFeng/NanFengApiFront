@@ -13,6 +13,15 @@ export function useFormSchema(): VbenFormSchema[] {
       rules: 'required',
     },
     {
+      component: 'Input',
+      componentProps: {
+        placeholder: 'admin_user',
+      },
+      fieldName: 'roleKey',
+      label: '角色标识',
+      rules: 'required',
+    },
+    {
       component: 'RadioGroup',
       componentProps: {
         buttonStyle: 'solid',
@@ -47,6 +56,11 @@ export function useGridFormSchema(): VbenFormSchema[] {
       component: 'Input',
       fieldName: 'name',
       label: $t('system.role.roleName'),
+    },
+    {
+      component: 'Input',
+      fieldName: 'roleKey',
+      label: '角色标识',
     },
     { component: 'Input', fieldName: 'id', label: $t('system.role.id') },
     {
@@ -87,7 +101,12 @@ export function useColumns<T = SystemRoleApi.SystemRole>(
     {
       field: 'id',
       title: $t('system.role.id'),
-      width: 200,
+      width: 100,
+    },
+    {
+      field: 'roleKey',
+      title: '角色标识',
+      width: 160,
     },
     {
       cellRender: {

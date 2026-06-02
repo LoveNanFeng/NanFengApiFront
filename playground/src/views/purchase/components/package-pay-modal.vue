@@ -343,7 +343,7 @@ function shouldPreopenPaymentWindow() {
 
 function createAndSubmitAlipayForm(
   payOrder: RechargeApi.PackagePaymentOrder,
-  formTarget: '_blank' | '_self',
+  formTarget: string,
 ) {
   if (!payOrder.gatewayUrl || !payOrder.formParams) {
     return;
@@ -382,10 +382,10 @@ function openAlipayPayment(
     createAndSubmitAlipayForm(payOrder, '_self');
     return;
   }
-  if (paymentWindow && payOrder.formHtml) {
-    paymentWindow.document.open();
-    paymentWindow.document.write(payOrder.formHtml);
-    paymentWindow.document.close();
+  if (paymentWindow && payOrder.formParams) {
+    const targetName = `alipay_${payOrder.orderNo}`;
+    paymentWindow.name = targetName;
+    createAndSubmitAlipayForm(payOrder, targetName);
     return;
   }
   createAndSubmitAlipayForm(payOrder, '_blank');

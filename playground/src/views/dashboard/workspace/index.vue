@@ -1155,7 +1155,7 @@ async function openBalanceRecharge() {
 
 function createAndSubmitAlipayForm(
   order: RechargeApi.RechargeOrder,
-  target: '_blank' | '_self',
+  target: string,
 ) {
   if (!order.gatewayUrl || !order.formParams) {
     return;
@@ -1196,10 +1196,10 @@ function openAlipayPayment(
     return;
   }
 
-  if (paymentWindow && order.formHtml) {
-    paymentWindow.document.open();
-    paymentWindow.document.write(order.formHtml);
-    paymentWindow.document.close();
+  if (paymentWindow && order.formParams) {
+    const targetName = `alipay_${order.orderNo}`;
+    paymentWindow.name = targetName;
+    createAndSubmitAlipayForm(order, targetName);
     return;
   }
 

@@ -5,11 +5,11 @@ import { requestClient } from '#/api/request';
 export namespace SystemRoleApi {
   export interface SystemRole {
     [key: string]: any;
-    id: string;
+    id: number | string;
     name: string;
-    permissions: string[];
+    permissions: Array<number | string>;
     remark?: string;
-    roleKey?: string;
+    roleKey: string;
     status: 0 | 1;
   }
 }
@@ -39,7 +39,7 @@ async function createRole(data: Omit<SystemRoleApi.SystemRole, 'id'>) {
  * @param data 角色数据
  */
 async function updateRole(
-  id: string,
+  id: number | string,
   data: Omit<SystemRoleApi.SystemRole, 'id'>,
 ) {
   return requestClient.put(`/system/role/${id}`, data);
@@ -49,7 +49,7 @@ async function updateRole(
  * 删除角色
  * @param id 角色 ID
  */
-async function deleteRole(id: string) {
+async function deleteRole(id: number | string) {
   return requestClient.delete(`/system/role/${id}`);
 }
 
