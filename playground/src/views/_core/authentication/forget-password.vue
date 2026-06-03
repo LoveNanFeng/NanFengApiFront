@@ -1,17 +1,21 @@
 <script lang="ts" setup>
-import type { VbenFormSchema } from '@vben/common-ui';
+import type { CaptchaVerifyPassingData, VbenFormSchema } from '@vben/common-ui';
+
+import type { AuthApi } from '#/api';
 
 import { computed, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
-import { AuthenticationForgetPassword, z } from '@vben/common-ui';
+import { AuthenticationForgetPassword, SliderCaptcha, z } from '@vben/common-ui';
 
-import { message } from 'ant-design-vue';
+import { message, Modal } from 'ant-design-vue';
 
 import {
   checkPasswordResetAccountApi,
+  getCaptchaApi,
   resetPasswordApi,
   sendPasswordResetEmailCodeApi,
+  verifyCaptchaApi,
   verifyPasswordResetCodeApi,
 } from '#/api';
 
@@ -27,6 +31,10 @@ const codeCountdown = ref(0);
 const account = ref('');
 const maskedEmail = ref('');
 const resetToken = ref('');
+const captchaModalOpen = ref(false);
+const captchaModalKey = ref(0);
+const captchaChecking = ref(false);
+const captcha = ref<AuthApi.CaptchaResult | null>(null);
 let countdownTimer: null | number = null;
 
 const pageTitle = computed(() => {
@@ -156,11 +164,73 @@ async function sendCode() {
   if (!account.value || sendingCode.value || codeCountdown.value > 0) {
     return;
   }
+  await openSendCodeCaptcha();
+}
+
+async function sendPasswordResetCode(captchaId: string) {
   sendingCode.value = true;
   try {
-    await sendPasswordResetEmailCodeApi(account.value);
+    await sendPasswordResetEmailCodeApi(account.value, captchaId);
     message.success('验证码已发送，请查看邮箱');
     startCountdown();
+  } finally {
+    sendingCode.value = false;
+  }
+}
+
+async function openSendCodeCaptcha() {
+  try {
+    const res = await getCaptchaApi();
+    captcha.value = res;
+    captchaModalKey.value++;
+    captchaModalOpen.value = true;
+  } catch {
+    captcha.value = null;
+    message.error('验证码加载失败，请重试');
+  }
+}
+
+function closeSendCodeCaptcha() {
+  if (captchaChecking.value) {
+    return;
+  }
+  captchaModalOpen.value = false;
+  captcha.value = null;
+}
+
+async function reloadSendCodeCaptcha() {
+  try {
+    const res = await getCaptchaApi();
+    captcha.value = res;
+    captchaModalKey.value++;
+  } catch {
+    captchaModalOpen.value = false;
+    captcha.value = null;
+    message.error('验证码加载失败，请重试');
+  }
+}
+
+async function onSendCodeCaptchaSuccess(values: CaptchaVerifyPassingData) {
+  if (!captcha.value || captchaChecking.value) {
+    return;
+  }
+  captchaChecking.value = true;
+  const currentCaptcha = captcha.value;
+  try {
+    await verifyCaptchaApi(currentCaptcha, String(values.time));
+  } catch {
+    await reloadSendCodeCaptcha();
+    captchaChecking.value = false;
+    return;
+  }
+
+  captchaChecking.value = false;
+  captchaModalOpen.value = false;
+  captcha.value = null;
+  try {
+    await sendPasswordResetCode(currentCaptcha.captchaId);
+  } catch {
+    // 请求拦截器会展示接口返回的错误信息。
   } finally {
     sendingCode.value = false;
   }
@@ -219,6 +289,8 @@ onUnmounted(() => {
   if (countdownTimer !== null) {
     window.clearInterval(countdownTimer);
   }
+  captchaModalOpen.value = false;
+  captcha.value = null;
 });
 </script>
 
@@ -261,6 +333,25 @@ onUnmounted(() => {
       </button>
     </div>
   </AuthenticationForgetPassword>
+  <Modal
+    :closable="!captchaChecking"
+    :footer="null"
+    :mask-closable="false"
+    :open="captchaModalOpen"
+    title="安全验证"
+    width="380px"
+    @cancel="closeSendCodeCaptcha"
+  >
+    <div class="space-y-4 py-2">
+      <p class="text-sm text-gray-500">
+        请完成滑块验证，验证通过后会自动发送验证码。
+      </p>
+      <SliderCaptcha
+        :key="captchaModalKey"
+        @success="onSendCodeCaptchaSuccess"
+      />
+    </div>
+  </Modal>
 </template>
 
 <style scoped>

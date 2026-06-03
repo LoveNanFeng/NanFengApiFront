@@ -318,9 +318,13 @@ export async function checkPasswordResetAccountApi(account: string) {
 /**
  * 发送找回密码邮箱验证码
  */
-export async function sendPasswordResetEmailCodeApi(account: string) {
+export async function sendPasswordResetEmailCodeApi(
+  account: string,
+  captchaId: string,
+) {
   return requestClient.post<boolean>('/auth/password-reset/email-code', {
     account,
+    captchaId,
   });
 }
 

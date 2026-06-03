@@ -5,10 +5,38 @@ import { preferences } from '@vben/preferences';
 import { useAccessStore, useUserStore } from '@vben/stores';
 import { startProgress, stopProgress } from '@vben/utils';
 
+import { refreshTokenApi } from '#/api';
 import { accessRoutes, coreRouteNames } from '#/router/routes';
 import { useAuthStore } from '#/store';
 
 import { generateAccess } from './access';
+
+let restoringAccessToken: null | Promise<boolean> = null;
+
+async function restoreAccessTokenFromCookie() {
+  const accessStore = useAccessStore();
+  if (accessStore.accessToken) {
+    return true;
+  }
+  if (!preferences.app.enableRefreshToken) {
+    return false;
+  }
+  restoringAccessToken ??= refreshTokenApi()
+    .then((resp) => {
+      const token = resp.data;
+      if (!token) {
+        return false;
+      }
+      accessStore.setAccessToken(token);
+      accessStore.setLoginExpired(false);
+      return true;
+    })
+    .catch(() => false)
+    .finally(() => {
+      restoringAccessToken = null;
+    });
+  return restoringAccessToken;
+}
 
 /**
  * 通用守卫配置
@@ -50,6 +78,9 @@ function setupAccessGuard(router: Router) {
     const authStore = useAuthStore();
     // 基本路由，这些路由不需要进入权限拦截
     if (coreRouteNames.includes(to.name as string)) {
+      if (to.path.startsWith('/auth') && !accessStore.accessToken) {
+        await restoreAccessTokenFromCookie();
+      }
       if (to.path.startsWith('/auth') && accessStore.accessToken) {
         return decodeURIComponent(
           (to.query?.redirect as string) ||
@@ -67,20 +98,22 @@ function setupAccessGuard(router: Router) {
         return true;
       }
 
-      // 没有访问权限，跳转登录页面
-      if (to.fullPath !== LOGIN_PATH) {
-        return {
-          path: LOGIN_PATH,
-          // 如不需要，直接删除 query
-          query:
-            to.fullPath === preferences.app.defaultHomePath
-              ? {}
-              : { redirect: encodeURIComponent(to.fullPath) },
-          // 携带当前跳转的页面，登录后重新跳转该页面
-          replace: true,
-        };
+      if (!(await restoreAccessTokenFromCookie())) {
+        // 没有访问权限，跳转登录页面
+        if (to.fullPath !== LOGIN_PATH) {
+          return {
+            path: LOGIN_PATH,
+            // 如不需要，直接删除 query
+            query:
+              to.fullPath === preferences.app.defaultHomePath
+                ? {}
+                : { redirect: encodeURIComponent(to.fullPath) },
+            // 携带当前跳转的页面，登录后重新跳转该页面
+            replace: true,
+          };
+        }
+        return to;
       }
-      return to;
     }
 
     // 是否已经生成过动态路由
