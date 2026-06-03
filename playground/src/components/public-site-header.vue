@@ -6,6 +6,7 @@ import { LOGIN_PATH } from '@vben/constants';
 import { IconifyIcon } from '@vben/icons';
 import { useAccessStore, useUserStore } from '@vben/stores';
 
+import { restoreAccessTokenFromCookie } from '#/composables/use-auth-session';
 import { usePublicSiteTheme } from '#/composables/use-public-site-theme';
 import { useSiteBrand } from '#/site-brand';
 
@@ -105,6 +106,7 @@ function handleWindowResize() {
 }
 
 onMounted(() => {
+  void restoreAccessTokenFromCookie();
   document.addEventListener('pointerdown', handleOutsidePointerDown);
   window.addEventListener('resize', handleWindowResize);
 });

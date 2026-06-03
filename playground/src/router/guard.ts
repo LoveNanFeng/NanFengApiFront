@@ -5,38 +5,11 @@ import { preferences } from '@vben/preferences';
 import { useAccessStore, useUserStore } from '@vben/stores';
 import { startProgress, stopProgress } from '@vben/utils';
 
-import { refreshTokenApi } from '#/api';
+import { restoreAccessTokenFromCookie } from '#/composables/use-auth-session';
 import { accessRoutes, coreRouteNames } from '#/router/routes';
 import { useAuthStore } from '#/store';
 
 import { generateAccess } from './access';
-
-let restoringAccessToken: null | Promise<boolean> = null;
-
-async function restoreAccessTokenFromCookie() {
-  const accessStore = useAccessStore();
-  if (accessStore.accessToken) {
-    return true;
-  }
-  if (!preferences.app.enableRefreshToken) {
-    return false;
-  }
-  restoringAccessToken ??= refreshTokenApi()
-    .then((resp) => {
-      const token = resp.data;
-      if (!token) {
-        return false;
-      }
-      accessStore.setAccessToken(token);
-      accessStore.setLoginExpired(false);
-      return true;
-    })
-    .catch(() => false)
-    .finally(() => {
-      restoringAccessToken = null;
-    });
-  return restoringAccessToken;
-}
 
 /**
  * 通用守卫配置
