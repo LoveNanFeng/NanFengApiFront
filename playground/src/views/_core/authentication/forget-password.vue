@@ -6,7 +6,11 @@ import type { AuthApi } from '#/api';
 import { computed, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
-import { AuthenticationForgetPassword, SliderCaptcha, z } from '@vben/common-ui';
+import {
+  AuthenticationForgetPassword,
+  SliderCaptcha,
+  z,
+} from '@vben/common-ui';
 
 import { message, Modal } from 'ant-design-vue';
 
