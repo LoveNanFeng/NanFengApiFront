@@ -51,6 +51,9 @@ function setupAccessGuard(router: Router) {
     const authStore = useAuthStore();
     // 基本路由，这些路由不需要进入权限拦截
     if (coreRouteNames.includes(to.name as string)) {
+      if (to.name === 'QqCallback') {
+        return true;
+      }
       if (to.path.startsWith('/auth') && !accessStore.accessToken) {
         await restoreAccessTokenFromCookie();
       }

@@ -110,6 +110,18 @@ const coreRoutes: RouteRecordRaw[] = [
     },
   },
   {
+    name: 'QqCallback',
+    path: '/auth/qq-callback',
+    component: () => import('#/views/_core/authentication/qq-callback.vue'),
+    meta: {
+      hideInBreadcrumb: true,
+      hideInMenu: true,
+      hideInTab: true,
+      ignoreAccess: true,
+      title: 'QQ快捷登录',
+    },
+  },
+  {
     component: AuthPageLayout,
     meta: {
       hideInTab: true,
@@ -159,14 +171,6 @@ const coreRoutes: RouteRecordRaw[] = [
         component: () => import('#/views/_core/authentication/register.vue'),
         meta: {
           title: $t('page.auth.register'),
-        },
-      },
-      {
-        name: 'QqCallback',
-        path: 'qq-callback',
-        component: () => import('#/views/_core/authentication/qq-callback.vue'),
-        meta: {
-          title: 'QQ快捷登录',
         },
       },
     ],

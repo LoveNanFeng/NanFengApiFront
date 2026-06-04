@@ -41,6 +41,13 @@ function useSuggestedRedirectUri() {
   form.redirectUri = form.suggestedRedirectUri;
 }
 
+function useCurrentFrontendBaseUrl() {
+  const basePath = import.meta.env.BASE_URL || '/';
+  const normalizedBase =
+    basePath === '/' ? '' : `/${basePath.replaceAll(/^\/+|\/+$/g, '')}`;
+  form.frontendBaseUrl = `${window.location.origin}${normalizedBase}`;
+}
+
 function normalizeFrontendUrl() {
   form.frontendBaseUrl = form.frontendBaseUrl.trim().replace(/\/+$/, '');
 }
@@ -154,7 +161,17 @@ onMounted(() => {
               v-model:value="form.frontendBaseUrl"
               placeholder="例如：https://你的域名 或 https://你的域名/#"
               @blur="normalizeFrontendUrl"
-            />
+            >
+              <template #addonAfter>
+                <Button
+                  type="link"
+                  size="small"
+                  @click="useCurrentFrontendBaseUrl"
+                >
+                  使用当前地址
+                </Button>
+              </template>
+            </Input>
           </label>
 
           <label class="config-item xl:col-span-2">
