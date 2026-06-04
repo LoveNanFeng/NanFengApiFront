@@ -14,6 +14,8 @@ export namespace InterfaceApi {
     avatarUrl?: string;
     callCount?: number | string;
     createTime?: string;
+    currentNode?: number;
+    currentNodeUrl?: string;
     docNotice?: string;
     docPreferredMethod?: '' | InvokeMethod;
     docRequestParams?: string;
@@ -29,11 +31,9 @@ export namespace InterfaceApi {
     keyStatus?: 0 | 1;
     name: string;
     paramKeys?: string[];
-    currentNode?: number;
-    currentNodeUrl?: string;
+    pointPrice: number | string;
     pollingEnabled?: 0 | 1;
     pollingMode?: PollingMode;
-    pointPrice: number | string;
     price: number | string;
     remark?: string;
     requestMethod: RequestMethod;
@@ -46,8 +46,8 @@ export namespace InterfaceApi {
   }
 
   export interface InterfaceListParams extends Recordable<any> {
-    keyword?: string;
     isFeatured?: 0 | 1;
+    keyword?: string;
     page?: number;
     pageSize?: number;
     requestMethod?: RequestMethod;
@@ -58,10 +58,10 @@ export namespace InterfaceApi {
     apiCode?: string;
     avatarUrl?: string;
     isFeatured?: 0 | 1;
-    name: string;
     isTop?: 0 | 1;
-    price: number | string;
+    name: string;
     pointPrice?: number | string;
+    price: number | string;
     remark: string;
     requestMethod: RequestMethod;
     requestUrl: string;
@@ -79,8 +79,8 @@ export namespace InterfaceApi {
     pollingEnabled: 0 | 1;
     pollingMode: PollingMode;
     requestUrl: string;
-    upstreamCount?: number;
     upstreamConfigs?: UpstreamConfig[];
+    upstreamCount?: number;
     upstreamUrls: string[];
   }
 
@@ -130,12 +130,12 @@ export namespace InterfaceApi {
     body: string;
     chargeAmount?: number | string;
     elapsedMs: number;
-    price: number | string;
     pointPrice?: number | string;
+    pollingMode?: PollingMode;
+    price: number | string;
     requestMethod: InvokeMethod;
     statusCode: number;
     success: boolean;
-    pollingMode?: PollingMode;
     upstreamSwitched?: boolean;
     upstreamUrl?: string;
   }
@@ -161,17 +161,18 @@ export namespace InterfaceApi {
     id: string;
     interfaceId: string;
     interfaceName: string;
+    pollingMode?: PollingMode;
     realName?: string;
     requestMethod: InvokeMethod;
     requestParams?: string;
     requestValue?: string;
     responseStatus: number;
     success: boolean | number;
-    pollingMode?: PollingMode;
     upstreamSwitched?: boolean | number;
     upstreamUrl?: string;
     userId: string;
     username: string;
+    userVisible?: boolean | number;
   }
 
   export interface CallLogListParams extends Recordable<any> {
@@ -296,8 +297,8 @@ export {
   getInterfacePolling,
   invokeInterface,
   saveInterfaceBillingRules,
-  uploadInterfaceAvatar,
-  updateInterfaceDoc,
   updateInterface,
+  updateInterfaceDoc,
   updateInterfacePolling,
+  uploadInterfaceAvatar,
 };

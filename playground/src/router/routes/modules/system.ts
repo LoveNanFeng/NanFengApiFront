@@ -30,6 +30,15 @@ const routes: RouteRecordRaw[] = [
         },
         component: () => import('#/views/system/site/index.vue'),
       },
+      {
+        path: '/system/log-delete',
+        name: 'SystemLogDelete',
+        meta: {
+          icon: 'mdi:delete-clock-outline',
+          title: '日志删除',
+        },
+        component: () => import('#/views/system/log-delete/index.vue'),
+      },
     ],
   },
   {

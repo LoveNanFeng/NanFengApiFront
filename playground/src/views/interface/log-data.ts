@@ -51,8 +51,15 @@ export function useCallLogGridFormSchema(): VbenFormSchema[] {
 }
 
 export function useCallLogColumns(isAdmin: boolean): VxeTableGridColumns<InterfaceApi.CallLogItem> {
-  const upstreamColumns = isAdmin
+  const adminColumns = isAdmin
     ? [
+        {
+          field: 'userVisible',
+          formatter: ({ cellValue }: any) =>
+            cellValue === false || cellValue === 0 ? '已隐藏' : '用户可见',
+          title: '用户侧状态',
+          width: 110,
+        },
         {
           field: 'upstreamUrl',
           formatter: ({ cellValue }: any) => cellValue || '-',
@@ -103,7 +110,7 @@ export function useCallLogColumns(isAdmin: boolean): VxeTableGridColumns<Interfa
       minWidth: 180,
       title: $t('system.interface.clientRegion'),
     },
-    ...upstreamColumns,
+    ...adminColumns,
     {
       cellRender: {
         name: 'CellTag',
