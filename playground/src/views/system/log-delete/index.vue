@@ -60,7 +60,11 @@ async function saveConfig() {
     message.warning('请选择每日执行时间');
     return;
   }
-  if (!Number.isFinite(retentionDays) || retentionDays < 1 || retentionDays > 3650) {
+  if (
+    !Number.isFinite(retentionDays) ||
+    retentionDays < 1 ||
+    retentionDays > 3650
+  ) {
     message.warning('用户日志保留天数必须在1到3650之间');
     return;
   }
@@ -105,7 +109,11 @@ onMounted(() => {
               un-checked-children="关闭"
             />
             <span class="text-sm text-muted-foreground">
-              {{ form.enabled ? '已启用，每日按计划隐藏过期用户日志' : '已关闭，不会自动隐藏用户日志' }}
+              {{
+                form.enabled
+                  ? '已启用，每日按计划隐藏过期用户日志'
+                  : '已关闭，不会自动隐藏用户日志'
+              }}
             </span>
           </div>
         </label>
@@ -147,11 +155,7 @@ onMounted(() => {
       </div>
 
       <div class="mt-6 flex justify-end">
-        <Button
-          type="primary"
-          :loading="saving || loading"
-          @click="saveConfig"
-        >
+        <Button type="primary" :loading="saving || loading" @click="saveConfig">
           保存配置
         </Button>
       </div>

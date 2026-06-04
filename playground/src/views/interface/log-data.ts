@@ -50,7 +50,9 @@ export function useCallLogGridFormSchema(): VbenFormSchema[] {
   ];
 }
 
-export function useCallLogColumns(isAdmin: boolean): VxeTableGridColumns<InterfaceApi.CallLogItem> {
+export function useCallLogColumns(
+  isAdmin: boolean,
+): VxeTableGridColumns<InterfaceApi.CallLogItem> {
   const adminColumns = isAdmin
     ? [
         {

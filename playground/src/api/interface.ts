@@ -237,10 +237,7 @@ async function deleteInterface(id: string) {
   return requestClient.delete(`/interface/${id}`);
 }
 
-async function invokeInterface(
-  id: string,
-  data: InterfaceApi.InvokePayload,
-) {
+async function invokeInterface(id: string, data: InterfaceApi.InvokePayload) {
   return requestClient.post<InterfaceApi.InvokeResult>(
     `/interface/${id}/invoke`,
     data,
@@ -253,9 +250,7 @@ async function getInterfaceBillingRules(id: string) {
   );
 }
 
-async function getInterfaceCallLogList(
-  params: InterfaceApi.CallLogListParams,
-) {
+async function getInterfaceCallLogList(params: InterfaceApi.CallLogListParams) {
   return requestClient.get<{
     items: InterfaceApi.CallLogItem[];
     total: number;
